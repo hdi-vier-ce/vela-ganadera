@@ -19,14 +19,21 @@ You should have received a copy of the GNU General Public License
 along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
 */
-
+#include <Arduino.h>
 #include <Wire.h>
 #include "SSD1306Wire.h"
 #include "OLEDDisplay.h"
 #include "images.h"
 #include "fonts.h"
+#include "ttn.h"
+#include "gps.h"
+#include "configuration.h"
+#include "main.h"
+#include "screen.h"
 
 #define SCREEN_HEADER_HEIGHT    14
+
+void screen_loop();
 
 SSD1306Wire * display;
 uint8_t _screen_line = SCREEN_HEADER_HEIGHT - 1;
@@ -42,8 +49,8 @@ void _screen_header() {
     display->drawString(0, 2, buffer);
 
     // Datetime (if the axp192 PMIC is present, alternate between powerstats and time)
-    if(axp192_found && millis()%8000 < 3000){
-        snprintf(buffer, sizeof(buffer), "%.1fV %.0fmA", axp.getBattVoltage()/1000, axp.getBattChargeCurrent() - axp.getBattDischargeCurrent());
+    if(getAxp192_found() && millis()%8000 < 3000){
+        snprintf(buffer, sizeof(buffer), "%.1fV %.0fmA", getAxp().getBattVoltage()/1000, getAxp().getBattChargeCurrent() - getAxp().getBattDischargeCurrent());
 
     } else {
         gps_time(buffer, sizeof(buffer));
@@ -128,20 +135,20 @@ void screen_loop() {
     if (!display) return;
 
     #ifdef T_BEAM_V10
-    if (axp192_found && pmu_irq) {
-        pmu_irq = false;
-        axp.readIRQ();
-        if (axp.isChargingIRQ()) {
-            baChStatus = "Charging";
+    if (getAxp192_found() && getPmu_irq()) {
+        setPmu_irq(false);
+        getAxp().readIRQ();
+        if (getAxp().isChargingIRQ()) {
+            setBaChStatus("Charging");
         } else {
-            baChStatus = "No Charging";
+            setBaChStatus("No Charging");
         }
-        if (axp.isVbusRemoveIRQ()) {
-            baChStatus = "No Charging";
+        if (getAxp().isVbusRemoveIRQ()) {
+            setBaChStatus("No Charging");
         }
-        Serial.println(baChStatus); //Prints charging status to screen
+        Serial.println(getBaChStatus()); //Prints charging status to screen
         digitalWrite(2, !digitalRead(2));
-        axp.clearIRQ();
+        getAxp().clearIRQ();
     }
     #endif
 

@@ -23,13 +23,14 @@ You should have received a copy of the GNU General Public License
 along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
 */
-
+#include <Arduino.h>
 #include <hal/hal.h>
 #include <SPI.h>
 #include <vector>
 #include <Preferences.h>
 #include "configuration.h"
 #include "credentials.h"
+#include "ttn.h"
 
 // -----------------------------------------------------------------------------
 // Globals
@@ -67,6 +68,8 @@ std::vector<void(*)(uint8_t message)> _lmic_callbacks;
 // -----------------------------------------------------------------------------
 // Private methods
 // -----------------------------------------------------------------------------
+
+void ttn_sf(unsigned char sf);
 
 void _ttn_callback(uint8_t message) {
     for (uint8_t i=0; i<_lmic_callbacks.size(); i++) {

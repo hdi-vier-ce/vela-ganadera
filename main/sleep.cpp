@@ -18,8 +18,9 @@ You should have received a copy of the GNU General Public License
 along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
 */
-
+#include <Arduino.h>
 #include <esp_sleep.h>
+#include "sleep.h"
 
 void sleep_interrupt(uint8_t gpio, uint8_t mode) {
     esp_sleep_enable_ext0_wakeup((gpio_num_t) gpio, mode);

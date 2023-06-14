@@ -18,8 +18,10 @@
   along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
 */
-
+#include <Arduino.h>
 #include <TinyGPS++.h>
+#include "configuration.h"
+#include "gps.h"
 
 uint32_t LatitudeBinary;
 uint32_t LongitudeBinary;
@@ -59,7 +61,7 @@ void gps_setup() {
     _serial_gps.begin(GPS_BAUDRATE, SERIAL_8N1, GPS_RX_PIN, GPS_TX_PIN);
 }
 
-static void gps_loop() {
+void gps_loop() {
     while (_serial_gps.available()) {
         _gps.encode(_serial_gps.read());
     }

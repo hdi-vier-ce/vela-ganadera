@@ -20,21 +20,47 @@
   along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
 */
-
+#include <Arduino.h>
 #include "configuration.h"
 #include "rom/rtc.h"
 #include <TinyGPS++.h>
 #include <Wire.h>
+#include "ttn.h"
+#include "gps.h"
+#include "screen.h"
+#include "sleep.h"
+#include "main.h"
 
-#include "axp20x.h"
-AXP20X_Class axp;
-bool pmu_irq = false;
 String baChStatus = "No charging";
 
 bool ssd1306_found = false;
 bool axp192_found = false;
+AXP20X_Class axp;
+bool pmu_irq = false;
 
 bool packetSent, packetQueued;
+
+String getBaChStatus(){
+    return baChStatus;
+}
+void setBaChStatus(String value){
+    baChStatus = value;
+}
+bool getSsd1306_found(){
+    return ssd1306_found;
+}
+bool getAxp192_found(){
+    return axp192_found;
+}
+AXP20X_Class getAxp(){
+    return axp;
+}
+bool getPmu_irq(){
+    return pmu_irq;
+}
+void setPmu_irq(bool value){
+    pmu_irq = value;
+}
 
 #if defined(PAYLOAD_USE_FULL)
     // includes number of satellites and accuracy
