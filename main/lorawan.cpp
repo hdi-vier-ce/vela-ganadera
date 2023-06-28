@@ -33,7 +33,7 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
 #include "screen.h"
 #include <queue> 
 #include "FS.h"
-#include "SPIFFS.h"
+#include "LittleFS.h"
 
 #define FAILED_DATA_FILE "/failedData.txt"
 // -----------------------------------------------------------------------------
@@ -219,7 +219,7 @@ void onEvent(ev_t event) {
 
 void GetFailedData (std::vector<uint8_t> &data){
 
-     File file = SPIFFS.open(FAILED_DATA_FILE,"r");
+     File file = LittleFS.open(FAILED_DATA_FILE,"r");
       if (file)
       {
         while (file.available())
@@ -228,7 +228,7 @@ void GetFailedData (std::vector<uint8_t> &data){
         }
         file.flush();
         file.close();
-        SPIFFS.remove(FAILED_DATA_FILE);
+        LittleFS.remove(FAILED_DATA_FILE);
 
         
       }
@@ -267,8 +267,8 @@ static void initCount() {
 bool lorawan_setup() {
     initCount();
 
-    SPIFFS.begin();
-    SPIFFS.format();
+    LittleFS.begin(true);
+    //LittleFS.format();
     Serial.println("SPIFFS is init ");
     
 
@@ -480,7 +480,7 @@ void lorawan_send(uint8_t * data, uint8_t data_size, uint8_t port, bool confirme
          _lorawan_callback(EV_FAILED);
          
          
-         File file = SPIFFS.open(FAILED_DATA_FILE,"a");
+         File file = LittleFS.open(FAILED_DATA_FILE,"a");
             if (file){
             uint8_t* frame = LMIC.frame ;
             for (int i = LMIC.dataBeg; i < (LMIC.dataBeg + LMIC.dataLen); i++)
