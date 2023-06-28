@@ -25,11 +25,12 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
 #include "OLEDDisplay.h"
 #include "images.h"
 #include "fonts.h"
-#include "ttn.h"
+#include "lorawan.h"
 #include "gps.h"
 #include "configuration.h"
 #include "main.h"
 #include "screen.h"
+
 
 #define SCREEN_HEADER_HEIGHT    14
 
@@ -44,15 +45,17 @@ void _screen_header() {
     char buffer[20];
 
     // Message count
-    snprintf(buffer, sizeof(buffer), "#%03d", ttn_get_count() % 1000);
+    snprintf(buffer, sizeof(buffer), "#%03d", lorawan_get_count() % 1000);
     display->setTextAlignment(TEXT_ALIGN_LEFT);
     display->drawString(0, 2, buffer);
 
     // Datetime (if the axp192 PMIC is present, alternate between powerstats and time)
     if(getAxp192_found() && millis()%8000 < 3000){
-        snprintf(buffer, sizeof(buffer), "%.1fV %.0fmA", getAxp().getBattVoltage()/1000, getAxp().getBattChargeCurrent() - getAxp().getBattDischargeCurrent());
-
-    } else {
+        snprintf(buffer, sizeof(buffer), "%.1fV %.0fmA",getAxp().getBattVoltage()/1000, getAxp().getBattChargeCurrent() - getAxp().getBattDischargeCurrent());
+        
+    } 
+    else
+     {
         gps_time(buffer, sizeof(buffer));
     }
     
@@ -130,11 +133,11 @@ void screen_setup() {
     // Scroll buffer
     display->setLogBuffer(5, 30);
 }
-
+char  Buffertime[9] ;
 void screen_loop() {
     if (!display) return;
 
-    #ifdef T_BEAM_V10
+    
     if (getAxp192_found() && getPmu_irq()) {
         setPmu_irq(false);
         getAxp().readIRQ();
@@ -143,14 +146,23 @@ void screen_loop() {
         } else {
             setBaChStatus("No Charging");
         }
+        if (getAxp().isVbusPlugInIRQ()) {
+            setBaChStatus("Charging");
+            
+        }
         if (getAxp().isVbusRemoveIRQ()) {
             setBaChStatus("No Charging");
+            //gps_time(Buffertime,sizeof(Buffertime));
+            //Time_Remove (Buffertime);
+
         }
+        
+
         Serial.println(getBaChStatus()); //Prints charging status to screen
         digitalWrite(2, !digitalRead(2));
         getAxp().clearIRQ();
     }
-    #endif
+    
 
     display->clear();
     _screen_header();

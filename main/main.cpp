@@ -2,7 +2,7 @@
 
   Main module
 
-  # Modified by Kyle T. Gabriel to fix issue with incorrect GPS data for TTNMapper
+  # Modified by Kyle T. Gabriel to fix issue with incorrect GPS data for Mapper
 
   Copyright (C) 2018 by Xose Pérez <xose dot perez at gmail dot com>
 
@@ -25,11 +25,13 @@
 #include "rom/rtc.h"
 #include <TinyGPS++.h>
 #include <Wire.h>
-#include "ttn.h"
+#include "lorawan.h"
 #include "gps.h"
 #include "screen.h"
 #include "sleep.h"
 #include "main.h"
+#include <string>
+
 
 String baChStatus = "No charging";
 
@@ -39,6 +41,7 @@ AXP20X_Class axp;
 bool pmu_irq = false;
 
 bool packetSent, packetQueued;
+float BatteryPercentage = axp.getBattPercentage();
 
 String getBaChStatus(){
     return baChStatus;
@@ -64,7 +67,7 @@ void setPmu_irq(bool value){
 
 #if defined(PAYLOAD_USE_FULL)
     // includes number of satellites and accuracy
-    static uint8_t txBuffer[10];
+    static uint8_t txBuffer[18];
 #elif defined(PAYLOAD_USE_CAYENNE)
     // CAYENNE DF
     static uint8_t txBuffer[11] = {0x03, 0x88, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00};
@@ -84,36 +87,42 @@ void buildPacket(uint8_t txBuffer[]);  // needed for platformio
  * If we have a valid position send it to the server.
  * @return true if we decided to send.
  */
+
 bool trySend() {
     packetSent = false;
     // We also wait for altitude being not exactly zero, because the GPS chip generates a bogus 0 alt report when first powered on
-    if (0 < gps_hdop() && gps_hdop() < 50 && gps_latitude() != 0 && gps_longitude() != 0 && gps_altitude() != 0) {
+    //if ((0< gps_hdop())&& (gps_hdop()< 50) && (gps_latitude() != 0 )&& (gps_longitude() != 0) && (gps_altitude() != 0)) {
         char buffer[40];
         snprintf(buffer, sizeof(buffer), "Latitude: %10.6f\n", gps_latitude());
         screen_print(buffer);
         snprintf(buffer, sizeof(buffer), "Longitude: %10.6f\n", gps_longitude());
         screen_print(buffer);
+        snprintf(buffer, sizeof(buffer), "Altitude: %f\n", gps_altitude());
+        screen_print(buffer);
         snprintf(buffer, sizeof(buffer), "Error: %4.2fm\n", gps_hdop());
         screen_print(buffer);
+        snprintf(buffer, sizeof(buffer), "Percentage: %1.0f %\n", axp.getBattPercentage());
+        screen_print (buffer);
+        snprintf(buffer, sizeof(buffer), "Battery Status %s\n", getBaChStatus());
+        screen_print (buffer);
 
         buildPacket(txBuffer);
 
     #if LORAWAN_CONFIRMED_EVERY > 0
-        bool confirmed = (ttn_get_count() % LORAWAN_CONFIRMED_EVERY == 0);
+        bool confirmed = (lorawan_get_count() % LORAWAN_CONFIRMED_EVERY == 0);
         if (confirmed){ Serial.println("confirmation enabled"); }
     #else
         bool confirmed = false;
     #endif
 
     packetQueued = true;
-    ttn_send(txBuffer, sizeof(txBuffer), LORAWAN_PORT, confirmed);
+    lorawan_send(txBuffer, sizeof(txBuffer), LORAWAN_PORT, confirmed);
     return true;
-    }
-    else {
-        return false;
-    }
-}
-
+   }
+   //else {
+        //return false;
+    //}
+//}
 
 void doDeepSleep(uint64_t msecToWake)
 {
@@ -176,40 +185,46 @@ void sleep() {
 #endif
 }
 
-
+bool connect = false ;
 void callback(uint8_t message) {
-    bool ttn_joined = false;
+    bool lorawan_joined = false;
     if (EV_JOINED == message) {
-        ttn_joined = true;
+        lorawan_joined = true;
     }
     if (EV_JOINING == message) {
-        if (ttn_joined) {
-            screen_print("TTN joining...\n");
+        if (lorawan_joined) {
+            screen_print("LoRaWAN joining...\n");
         } else {
-            screen_print("Joined TTN!\n");
+            screen_print("Joined LoRaWAN!\n");
         }
     }
-    if (EV_JOIN_FAILED == message) screen_print("TTN join failed\n");
-    if (EV_REJOIN_FAILED == message) screen_print("TTN rejoin failed\n");
-    if (EV_RESET == message) screen_print("Reset TTN connection\n");
-    if (EV_LINK_DEAD == message) screen_print("TTN link dead\n");
+    if (EV_JOIN_FAILED == message) screen_print("LoRaWAN join failed\n");
+    if (EV_REJOIN_FAILED == message) screen_print("LoRaWAN rejoin failed\n");
+    if (EV_RESET == message) screen_print("Reset LoRaWAN connection\n");
+    if (EV_LINK_DEAD == message) screen_print("LoRaWAN link dead\n");
     if (EV_ACK == message) screen_print("ACK received\n");
+    if (EV_FAILED == message) screen_print("Failed to receive ACK \n");
     if (EV_PENDING == message) screen_print("Message discarded\n");
     if (EV_QUEUED == message) screen_print("Message queued\n");
 
     // We only want to say 'packetSent' for our packets (not packets needed for joining)
-    if (EV_TXCOMPLETE == message && packetQueued) {
+    if (EV_TXCOMPLETE == message) {
+        
         screen_print("Message sent\n");
         packetQueued = false;
-        packetSent = true;
+        packetSent = true ;
     }
+    /*if (EV_REJOIN_FAILED != message)
+   {    connect = true ; 
+        ConnectionStatues (connect);
 
+    }*/
     if (EV_RESPONSE == message) {
-        screen_print("[TTN] Response: ");
+        screen_print("[LoRaWAN] Response: ");
 
-        size_t len = ttn_response_len();
+        size_t len = lorawan_response_len();
         uint8_t data[len];
-        ttn_response(data, len);
+        lorawan_response(data, len);
 
         char buffer[6];
         for (uint8_t i = 0; i < len; i++) {
@@ -355,7 +370,7 @@ void setup()
     #endif
 
     // Hello
-    DEBUG_MSG(APP_NAME " " APP_VERSION "\n");
+    DEBUG_MSG(APP_NAME "\n");
 
     // Don't init display if we don't have one or we are waking headless due to a timer event
     if (wakeCause == ESP_SLEEP_WAKEUP_TIMER)
@@ -370,16 +385,17 @@ void setup()
     #ifndef ALWAYS_SHOW_LOGO
     if (bootCount == 0) {
     #endif
-        screen_print(APP_NAME " " APP_VERSION, 0, 0);
-        screen_show_logo();
+        screen_print(APP_NAME , 0, 0);
+
+        //screen_show_logo();
         screen_update();
         delay(LOGO_DELAY);
     #ifndef ALWAYS_SHOW_LOGO
     }
     #endif
 
-    // TTN setup
-    if (!ttn_setup()) {
+    // lorawan setup
+    if (!lorawan_setup()) {
         screen_print("[ERR] Radio module not found!\n");
 
         if (REQUIRE_RADIO) {
@@ -389,15 +405,15 @@ void setup()
         }
     }
     else {
-        ttn_register(callback);
-        ttn_join();
-        ttn_adr(LORAWAN_ADR);
+        lorawan_register(callback);
+        lorawan_join();
+        lorawan_adr(LORAWAN_ADR);
     }
 }
 
 void loop() {
     gps_loop();
-    ttn_loop();
+    lorawan_loop();
     screen_loop();
 
     if (packetSent) {

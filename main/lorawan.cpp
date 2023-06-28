@@ -1,7 +1,6 @@
 /*
 
-TTN module
-Wrapper to use TTN with the LMIC library
+lorawan module
 
 Copyright (C) 2018 by Xose Pérez <xose dot perez at gmail dot com>
 
@@ -30,8 +29,13 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
 #include <Preferences.h>
 #include "configuration.h"
 #include "credentials.h"
-#include "ttn.h"
+#include "lorawan.h"
+#include "screen.h"
+#include <queue> 
+#include "FS.h"
+#include "SPIFFS.h"
 
+#define FAILED_DATA_FILE "/failedData.txt"
 // -----------------------------------------------------------------------------
 // Globals
 // -----------------------------------------------------------------------------
@@ -43,7 +47,6 @@ const lmic_pinmap lmic_pins = {
     .rst = RESET_GPIO,
     .dio = {DIO0_GPIO, DIO1_GPIO, DIO2_GPIO},
 };
-
 
 // Message counter, stored in RTC memory, survives deep sleep.
 static RTC_DATA_ATTR uint32_t count = 0;
@@ -69,9 +72,10 @@ std::vector<void(*)(uint8_t message)> _lmic_callbacks;
 // Private methods
 // -----------------------------------------------------------------------------
 
-void ttn_sf(unsigned char sf);
 
-void _ttn_callback(uint8_t message) {
+void lorawan_sf(unsigned char sf);
+
+void _lorawan_callback(uint8_t message) {
     for (uint8_t i=0; i<_lmic_callbacks.size(); i++) {
         (_lmic_callbacks[i])(message);
     }
@@ -90,7 +94,7 @@ void forceTxSingleChannelDr() {
     #endif
 
     // Set data rate (SF) and transmit power for uplink
-    ttn_sf(LORAWAN_SF);
+    lorawan_sf(LORAWAN_SF);
 }
 
 
@@ -99,7 +103,7 @@ void gen_lora_deveui(uint8_t *pdeveui) {
     uint8_t *p = pdeveui, dmac[6];
     int i = 0;
     esp_efuse_mac_get_default(dmac);
-    // deveui is LSB, we reverse it so TTN DEVEUI display
+    // deveui is LSB, we reverse it so lorawan DEVEUI display
     // will remain the same as MAC address
     // MAC is 6 bytes, devEUI 8, set first 2 ones
     // with an arbitrary value
@@ -138,8 +142,8 @@ static void printHex2(unsigned v) {
         Serial.println();
     }
 #endif
-
 // LMIC library will call this method when an event is fired
+bool join ;
 void onEvent(ev_t event) {
     switch(event) {
     case EV_JOINED: {
@@ -155,7 +159,6 @@ void onEvent(ev_t event) {
         }
 
         Serial.println(F("EV_JOINED"));
-
         u4_t netid = 0;
         devaddr_t devaddr = 0;
         u1_t nwkKey[16];
@@ -188,41 +191,62 @@ void onEvent(ev_t event) {
             p.putBytes("artKey", artKey, sizeof(artKey));
             p.end();
         }
+
         break; }
     case EV_TXCOMPLETE:
         Serial.println(F("EV_TXCOMPLETE (inc. RX win. wait)"));
-        if (LMIC.txrxFlags & TXRX_ACK) {
+        if (LMIC.txrxFlags & TXRX_ACK) { // confirmed Up are acked 
             Serial.println(F("Received ack"));
-            _ttn_callback(EV_ACK);
+            _lorawan_callback(EV_ACK);
+        } else {
+            Serial.println(F("failed to receive ack"));
+            _lorawan_callback(EV_FAILED);
         }
         if (LMIC.dataLen) {
             Serial.print(F("Data Received: "));
             Serial.write(LMIC.frame+LMIC.dataBeg, LMIC.dataLen);
             Serial.println();
-            _ttn_callback(EV_RESPONSE);
-        }
+            _lorawan_callback(EV_RESPONSE);
+        }        
         break;
     default:
         break;
     }
 
     // Send message callbacks
-    _ttn_callback(event);
+    _lorawan_callback(event);
 }
 
+void GetFailedData (std::vector<uint8_t> &data){
+
+     File file = SPIFFS.open(FAILED_DATA_FILE,"r");
+      if (file)
+      {
+        while (file.available())
+        {
+            data.push_back(file.read());
+        }
+        file.flush();
+        file.close();
+        SPIFFS.remove(FAILED_DATA_FILE);
+
+        
+      }
+      
+}
 // -----------------------------------------------------------------------------
 // Public methods
 // -----------------------------------------------------------------------------
 
-void ttn_register(void (*callback)(uint8_t message)) {
+void lorawan_register(void (*callback)(uint8_t message)) {
     _lmic_callbacks.push_back(callback);
 }
 
-size_t ttn_response_len() {
+size_t lorawan_response_len() {
     return LMIC.dataLen;
 }
 
-void ttn_response(uint8_t * buffer, size_t len) {
+void lorawan_response(uint8_t * buffer, size_t len) {
     for (uint8_t i = 0; i < LMIC.dataLen; i++) {
         buffer[i] = LMIC.frame[LMIC.dataBeg + i];
     }
@@ -240,8 +264,13 @@ static void initCount() {
 }
 
 
-bool ttn_setup() {
+bool lorawan_setup() {
     initCount();
+
+    SPIFFS.begin();
+    SPIFFS.format();
+    Serial.println("SPIFFS is init ");
+    
 
     #if defined(USE_OTAA)
         initDevEUI();
@@ -251,10 +280,26 @@ bool ttn_setup() {
     SPI.begin(SCK_GPIO, MISO_GPIO, MOSI_GPIO, NSS_GPIO);
 
     // LMIC init
-    return ( 1 == os_init_ex( (const void *) &lmic_pins ) );
+    bool InitLMIC = 1 == os_init_ex( (const void *) &lmic_pins ) ;
+     return InitLMIC ;
+
 }
 
-void ttn_join() {
+void SendFailedData () {
+    std::vector<uint8_t> failedData ;
+    GetFailedData(failedData);
+
+    if (!failedData.empty())
+    {
+       uint8_t *Failed = reinterpret_cast<uint8_t*>(failedData[0]) ; 
+       lorawan_send(Failed, sizeof(Failed), LORAWAN_PORT, true);
+
+    }
+    
+}
+
+
+void lorawan_join() {
     // Reset the MAC state. Session and pending data transfers will be discarded.
     LMIC_reset();
 
@@ -302,7 +347,7 @@ void ttn_join() {
 
     #endif
 
-        // TTN defines an additional channel at 869.525Mhz using SF9 for class B
+        // defines an additional channel at 869.525Mhz using SF9 for class B
         // devices' ping slots. LMIC does not have an easy way to define set this
         // frequency and support for class B is spotty and untested, so this
         // frequency is not configured here.
@@ -314,7 +359,7 @@ void ttn_join() {
             forceTxSingleChannelDr();
         #else
             // Set default rate and transmit power for uplink (note: txpow seems to be ignored by the library)
-            ttn_sf(LORAWAN_SF);
+            lorawan_sf(LORAWAN_SF);
         #endif
 
     #if defined(USE_ABP)
@@ -331,7 +376,7 @@ void ttn_join() {
         LMIC.dn2Dr = DR_SF9;
 
         // Trigger a false joined
-        _ttn_callback(EV_JOINED);
+        _lorawan_callback(EV_JOINED);
 
     #elif defined(USE_OTAA)
 
@@ -366,26 +411,31 @@ void ttn_join() {
             LMIC_setSession(netId, devAddr, nwkKey, artKey);
 
             // Trigger a false joined
-            _ttn_callback(EV_JOINED);
+            _lorawan_callback(EV_JOINED);
+            if (LMIC.devaddr != 0)
+            {
+                SendFailedData();
+            }
+            
         }
 
     #endif
 }
 
-void ttn_sf(unsigned char sf) {
+void lorawan_sf(unsigned char sf) {
     LMIC_setDrTxpow(sf, 14);
 }
 
-void ttn_adr(bool enabled) {
+void lorawan_adr(bool enabled) {
     LMIC_setAdrMode(enabled);
     LMIC_setLinkCheckMode(enabled);
 }
 
-uint32_t ttn_get_count() {
+uint32_t lorawan_get_count() {
   return count;
 }
 
-static void ttn_set_cnt() {
+static void lorawan_set_cnt() {
     LMIC_setSeqnoUp(count);
 
     // We occasionally mirror our count to flash, to ensure that if we lose power we will at least start with a count that is almost correct 
@@ -405,7 +455,7 @@ static void ttn_set_cnt() {
 }
 
 /// Blow away our prefs (i.e. to rejoin from scratch)
-void ttn_erase_prefs() {
+void lorawan_erase_prefs() {
     Preferences p;
     if(p.begin("lora", false)) {
         p.clear();
@@ -413,23 +463,69 @@ void ttn_erase_prefs() {
     }
 }
 
-void ttn_send(uint8_t * data, uint8_t data_size, uint8_t port, bool confirmed){
-    ttn_set_cnt(); // we are about to send using the current packet count
+
+void lorawan_send(uint8_t * data, uint8_t data_size, uint8_t port, bool confirmed){
+    lorawan_set_cnt(); // we are about to send using the current packet count
 
     // Check if there is not a current TX/RX job running
     if (LMIC.opmode & OP_TXRXPEND) {
-        _ttn_callback(EV_PENDING);
-        return;
-    }
+        _lorawan_callback(EV_PENDING);
+        
+       return ;
+    } 
+      if (LMIC.txrxFlags & TXRX_NACK ) //confirmed UP frame was not acked and the TX-RX combo ---> for cheking the failure 
+      {
+        Serial.println(F("Failure in sending "));
+        screen_print("Failed to send \n ");
+         _lorawan_callback(EV_FAILED);
+         
+         
+         File file = SPIFFS.open(FAILED_DATA_FILE,"a");
+            if (file){
+            uint8_t* frame = LMIC.frame ;
+            for (int i = LMIC.dataBeg; i < (LMIC.dataBeg + LMIC.dataLen); i++)
+            {
+               file.write(frame[i]);
+               Serial.println("data writed in file");
+            }
+            file.println();
+            file.flush();
+            file.close();
+            
+            }   
+         _lorawan_callback(EV_QUEUED);
+         count++; 
+         
+         return ;
 
+      }
+      
     // Prepare upstream data transmission at the next possible time.
     // Parameters are port, data, length, confirmed
     LMIC_setTxData2(port, data, data_size, confirmed ? 1 : 0);
-
-    _ttn_callback(EV_QUEUED);
-    count++;
+    _lorawan_callback(EV_QUEUED);
+    
+    
+    count++; 
+    
+    
 }
+/**void ConnectionStatues (bool Connected){
+   bool isconnected = Connected ;
+    if (isconnected){
+        screen_print ("trying to resend data");
+        while (!uplinksqueue.empty())
+        {
+            unsigned char uplinkschar = uplinksqueue.front();
+            uplinksqueue.pop();
+            uint8_t *uplinks = reinterpret_cast<uint8_t*>(uplinkschar) ;
+             lorawan_send(uplinks, sizeof(uplinks), LORAWAN_PORT, true);
 
-void ttn_loop() {
+        }
+        
+    }
+}**/
+
+void lorawan_loop() {
     os_runloop_once();
 }

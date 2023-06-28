@@ -22,20 +22,29 @@
 #include <TinyGPS++.h>
 #include "configuration.h"
 #include "gps.h"
+#include <Wire.h>
+#include "main.h"
 
 uint32_t LatitudeBinary;
 uint32_t LongitudeBinary;
 uint16_t altitudeGps;
 uint8_t hdopGps;
 uint8_t sats;
+uint32_t TimeBr ;
+AXP20X_Class axp2;
+
+
 char t[32]; // used to sprintf for Serial output
 
 TinyGPSPlus _gps;
 HardwareSerial _serial_gps(GPS_SERIAL_NUM);
-
+uint8_t BatPercent = axp2.getBattPercentage();
+bool Remove = axp2.isVbusRemoveIRQ() ; 
+uint8_t Status ;
 void gps_time(char * buffer, uint8_t size) {
     snprintf(buffer, size, "%02d:%02d:%02d", _gps.time.hour(), _gps.time.minute(), _gps.time.second());
 }
+
 
 float gps_latitude() {
     return _gps.location.lat();
@@ -66,17 +75,42 @@ void gps_loop() {
         _gps.encode(_serial_gps.read());
     }
 }
+/**void Time_Remove (char* Tibuffer){
+       Serial.print("Time: ");
+       Serial.println(Tibuffer);
+       std::string Timebufferr = Tibuffer ;
+       std::string TimeR = Timebufferr + " : the power cable pull off" ;  
+}*/
 
 #if defined(PAYLOAD_USE_FULL)
 
     // More data than PAYLOAD_USE_CAYENNE
-    void buildPacket(uint8_t txBuffer[10])
+    void buildPacket(uint8_t txBuffer[18])
     {
         LatitudeBinary = ((_gps.location.lat() + 90) / 180.0) * 16777215;
         LongitudeBinary = ((_gps.location.lng() + 180) / 360.0) * 16777215;
         altitudeGps = _gps.altitude.meters();
         hdopGps = _gps.hdop.value() / 10;
         sats = _gps.satellites.value();
+
+       //get time
+       char  Buffertime[9] ;
+       gps_time(Buffertime,sizeof(Buffertime));
+       if (getBaChStatus()=="Charging")
+       {
+        Status = 1 ; 
+       }else {
+        Status =0 ; 
+       }
+       if (getAxp().isVbusRemoveIRQ()){
+        char  BuffertimeR[9] ;
+        gps_time(BuffertimeR,sizeof(BuffertimeR));
+        TimeBr = ((_gps.time.hour()*3600)+ (_gps.time.minute()*60)+_gps.time.second());
+        Serial.print("BinaryR: ");
+        Serial.println(TimeBr);
+        
+       }
+       
 
         sprintf(t, "Lat: %f", _gps.location.lat());
         Serial.println(t);
@@ -88,6 +122,24 @@ void gps_loop() {
         Serial.println(t);
         sprintf(t, "Sats: %d", sats);
         Serial.println(t);
+        Serial.print("time: ");
+        Serial.println(Buffertime);
+
+       uint32_t timebinary = ((_gps.time.hour()*3600)+ (_gps.time.minute()*60)+_gps.time.second());
+       Serial.print("Binary: ");
+       Serial.println(timebinary);
+       //battery pourcentage to uint8_t 
+       uint8_t BatPercentage = BatPercent;
+       Serial.print("Battery pourcentage1: ");
+       Serial.println(BatPercent);
+       Serial.print("Battery pourcentage: ");
+       Serial.println(BatPercentage);
+       Serial.print("statu: ");
+       Serial.println(Status);
+       //Serial.print("BinaryR: ");
+       //Serial.println(TimeBr);
+       
+
 
         txBuffer[0] = ( LatitudeBinary >> 16 ) & 0xFF;
         txBuffer[1] = ( LatitudeBinary >> 8 ) & 0xFF;
@@ -99,6 +151,17 @@ void gps_loop() {
         txBuffer[7] = altitudeGps & 0xFF;
         txBuffer[8] = hdopGps & 0xFF;
         txBuffer[9] = sats & 0xFF;
+        txBuffer[10] = (timebinary >> 16) & 0xFF;
+        txBuffer[11] = ( timebinary >> 8 ) & 0xFF;
+        txBuffer[12] = timebinary & 0xFF;
+        txBuffer[13] = BatPercentage & 0xFF;
+        txBuffer[14] = Status & 0xFF;
+        txBuffer[15] = (TimeBr >> 16) & 0xFF;
+        txBuffer[16] = ( TimeBr >> 8 ) & 0xFF;
+        txBuffer[17] = TimeBr & 0xFF;
+
+
+
     }
 
 #elif defined(PAYLOAD_USE_CAYENNE)

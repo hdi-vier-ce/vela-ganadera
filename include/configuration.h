@@ -26,14 +26,14 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
 #include <Arduino.h>
 #include <lmic.h>
-void ttn_register(void (*callback)(uint8_t message));
+void lorawan_register(void (*callback)(uint8_t message));
 
 // -----------------------------------------------------------------------------
 // Version
 // -----------------------------------------------------------------------------
 
-#define APP_NAME                "TTN MAP-TRACK"
-#define APP_VERSION             "1.2.3"
+#define APP_NAME                "MAP-TRACK"
+
 
 // -----------------------------------------------------------------------------
 // Configuration
@@ -54,22 +54,22 @@ void ttn_register(void (*callback)(uint8_t message));
 #define ALWAYS_SHOW_LOGO
 
 //Uncomment to enable discarding network settings by long pressing second button
-//Used for resetting frame counter, required to be done for migrating TTN v2 -> v3 (or switching applications on TTN)
+//Used for resetting frame counter, required to be done for migrating v2 -> v3 
 //#define PREFS_DISCARD
 
-// If you are having difficulty sending messages to TTN after the first successful send,
+// If you are having difficulty sending messages after the first successful send,
 // uncomment the next option and experiment with values (~ 1 - 5)
 //#define CLOCK_ERROR             5
 
 #define DEBUG_PORT              Serial          // Serial debug port
 #define SERIAL_BAUD             115200          // Serial debug baud rate
 #define SLEEP_BETWEEN_MESSAGES  false           // Do sleep between messages
-#define SEND_INTERVAL           (20 * 1000)     // Sleep for these many millis
+#define SEND_INTERVAL           (60 * 1000)     // Sleep for these many millis
 #define MESSAGE_TO_SLEEP_DELAY  5000            // Time after message before going to sleep
 #define LOGO_DELAY              5000            // Time to show logo on first boot
 #define LORAWAN_PORT            10              // Port the messages will be sent to
-#define LORAWAN_CONFIRMED_EVERY 0               // Send confirmed message every these many messages (0 means never)
-#define LORAWAN_SF              DR_SF7          // Spreading factor (recommended DR_SF7 for ttn network map purposes, DR_SF10 works for slow moving trackers)
+#define LORAWAN_CONFIRMED_EVERY 1               // Send confirmed message every these many messages (0 means never)
+#define LORAWAN_SF              DR_SF7          // Spreading factor (recommended DR_SF7 for  map purposes, DR_SF10 works for slow moving trackers)
 #define LORAWAN_ADR             0               // Enable ADR
 #define REQUIRE_RADIO           true            // If true, we will fail to start if the radio is not found
 
@@ -89,11 +89,11 @@ void ttn_register(void (*callback)(uint8_t message));
 // -----------------------------------------------------------------------------
 // Custom messages
 // -----------------------------------------------------------------------------
-
 #define EV_QUEUED       100
 #define EV_PENDING      101
 #define EV_ACK          102
 #define EV_RESPONSE     103
+#define EV_FAILED       104
 
 // -----------------------------------------------------------------------------
 // General
