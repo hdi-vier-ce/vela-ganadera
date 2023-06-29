@@ -34,6 +34,7 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
 #include <queue> 
 #include "FS.h"
 #include "LittleFS.h"
+#include <flash.h>
 
 #define FAILED_DATA_FILE "/failedData.txt"
 // -----------------------------------------------------------------------------
@@ -217,9 +218,9 @@ void onEvent(ev_t event) {
     _lorawan_callback(event);
 }
 
-void GetFailedData (std::vector<uint8_t> &data){
+/**void GetFailedData (std::vector<uint8_t> &data){
 
-     File file = LittleFS.open(FAILED_DATA_FILE,"r");
+    * File file = LittleFS.open(FAILED_DATA_FILE,"r");
       if (file)
       {
         while (file.available())
@@ -229,11 +230,11 @@ void GetFailedData (std::vector<uint8_t> &data){
         file.flush();
         file.close();
         LittleFS.remove(FAILED_DATA_FILE);
-
+        readFile(LittleFS, FAILED_DATA_FILE);
         
-      }
       
-}
+      
+}*/
 // -----------------------------------------------------------------------------
 // Public methods
 // -----------------------------------------------------------------------------
@@ -267,9 +268,12 @@ static void initCount() {
 bool lorawan_setup() {
     initCount();
 
-    LittleFS.begin(true);
+    LittleFS.begin();
     //LittleFS.format();
-    Serial.println("SPIFFS is init ");
+    //Serial.println("LittleFS is init ");
+    
+    
+    
     
 
     #if defined(USE_OTAA)
@@ -284,17 +288,20 @@ bool lorawan_setup() {
      return InitLMIC ;
 
 }
-
+std::queue<String> Queue ; 
 void SendFailedData () {
-    std::vector<uint8_t> failedData ;
-    GetFailedData(failedData);
-
-    if (!failedData.empty())
+    Queue = readFile(LittleFS, FAILED_DATA_FILE);
+    while (!Queue.empty())
     {
-       uint8_t *Failed = reinterpret_cast<uint8_t*>(failedData[0]) ; 
-       lorawan_send(Failed, sizeof(Failed), LORAWAN_PORT, true);
+        String data = Queue.front();
+        Queue.pop();
+         char* chardata = const_cast<char*>(data.c_str());
 
-    }
+         uint8_t* Failed = reinterpret_cast< uint8_t*>(chardata);
+    
+    lorawan_send(Failed, sizeof(Failed), LORAWAN_PORT, true);
+}
+    
     
 }
 
@@ -412,10 +419,10 @@ void lorawan_join() {
 
             // Trigger a false joined
             _lorawan_callback(EV_JOINED);
-            if (LMIC.devaddr != 0)
+            /**if (LMIC.devaddr != 0)
             {
                 SendFailedData();
-            }
+            }*/
             
         }
 
@@ -467,6 +474,7 @@ void lorawan_erase_prefs() {
 void lorawan_send(uint8_t * data, uint8_t data_size, uint8_t port, bool confirmed){
     lorawan_set_cnt(); // we are about to send using the current packet count
 
+
     // Check if there is not a current TX/RX job running
     if (LMIC.opmode & OP_TXRXPEND) {
         _lorawan_callback(EV_PENDING);
@@ -478,21 +486,39 @@ void lorawan_send(uint8_t * data, uint8_t data_size, uint8_t port, bool confirme
         Serial.println(F("Failure in sending "));
         screen_print("Failed to send \n ");
          _lorawan_callback(EV_FAILED);
-         
-         
-         File file = LittleFS.open(FAILED_DATA_FILE,"a");
-            if (file){
-            uint8_t* frame = LMIC.frame ;
-            for (int i = LMIC.dataBeg; i < (LMIC.dataBeg + LMIC.dataLen); i++)
-            {
-               file.write(frame[i]);
-               Serial.println("data writed in file");
-            }
-            file.println();
-            file.flush();
-            file.close();
+         unsigned int lat = ( data[0]<<16 )|( data[1]<<8 )|data[2];
+         float Latdeg = ((lat /16777215)*180)-90 ;
+         unsigned int longg = ( data[3]<<16 )|( data[4]<<8 )|data[5];
+         float Longdeg = ((longg /16777215)*360)-180;
+         unsigned int alt = ( data[6]<<16 )|( data[7]<<8 );
+         unsigned int Hdop = data[8];
+         float Hdoop =static_cast<float>(Hdop/10);
+         float stat = data[9];
+         unsigned int time = ( data[10]<<16 )|( data[11]<<8 )|data[12];
+         unsigned int Hour = time / 3600;
+         unsigned int Min = (time % 3600)/60;
+         unsigned int Sec = time % 60;
+         unsigned int Bat = data[13];
+         float BattP = static_cast<float>((Bat/255)*100); 
+         float BattS = data[14];
+         std::string LatdegS = std::to_string(Latdeg);
+         std::string LongdegS = std::to_string(Longdeg);
+         std::string altS = std::to_string(alt);
+         std::string HdoopS = std::to_string(Hdoop);
+         std::string statS = std::to_string(stat);
+         std::string HourS = std::to_string(Hour);
+         std::string MinS = std::to_string(Min);
+         std::string SecS = std::to_string(Sec);
+         std::string BattPS = std::to_string(BattP);
+         std::string BattSS = std::to_string(BattS);
+         std::string FailData = LatdegS + " " + LongdegS + " "  + altS  + " " + HdoopS  + " " + statS + " "  + HourS + " "  + MinS + " "  + SecS + " "  + BattPS + " "  + BattSS ; 
+         const char *dst = FailData.c_str();
+
+          // const char* dst = reinterpret_cast< const char*>(data);
+        
+           writeFile(LittleFS, FAILED_DATA_FILE, dst);
             
-            }   
+         
          _lorawan_callback(EV_QUEUED);
          count++; 
          
