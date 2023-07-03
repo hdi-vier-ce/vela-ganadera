@@ -35,6 +35,10 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
 #include "FS.h"
 #include "LittleFS.h"
 #include <flash.h>
+#include <iostream> 
+#include <sstream>
+#include <iterator>
+
 
 #define FAILED_DATA_FILE "/failedData.txt"
 // -----------------------------------------------------------------------------
@@ -295,9 +299,54 @@ void SendFailedData () {
     {
         String data = Queue.front();
         Queue.pop();
-         char* chardata = const_cast<char*>(data.c_str());
+        //std::string data;
+        
+        // char* chardata = const_cast<char*>(data.c_str());
 
-         uint8_t* Failed = reinterpret_cast< uint8_t*>(chardata);
+         //uint8_t* Failed = reinterpret_cast< uint8_t*>(chardata);
+         const char * c = data.c_str();
+         std::istringstream iss(c); 
+         std::vector <std ::string > tokens{std::istream_iterator<std::string>{iss} , std::istream_iterator<std::string>{}}; 
+         double latt = std::stod(tokens[0]); 
+         double loong = std::stod(tokens[1]);
+         uint16_t altt = std::stoi(tokens [2]);
+         uint8_t hdp = std::stoi (tokens[3]); 
+         uint8_t sta = std::stoi(tokens[4]);
+         unsigned int hr = std::stoi(tokens[5]);
+         unsigned int Mi = std::stoi(tokens[6]);
+         unsigned int Sec = std::stoi(tokens[7]);
+         uint8_t BPc = std::stoi(tokens[8]);
+         uint8_t Bs = std::stoi(tokens[9]);
+         uint32_t LatB = (( latt+ 90.0) / 180.0) * 16777215.0 ;
+         uint32_t LongB = (( loong + 180.0) / 360.0) * 16777215.0 ;
+         uint32_t Tb = ((hr *3600)+ (Mi *60)+ Sec) ; 
+         uint8_t BPB = ( BPc / 100) * 255 ; 
+         uint8_t Failed[18]  ; 
+
+         Failed[0] = ( LatB >> 16 ) & 0xFF;
+         Failed[1] = ( LatB >> 8 ) & 0xFF;
+         Failed[2] = LatB & 0xFF;
+         Failed[3] = ( LongB >> 16 ) & 0xFF;
+         Failed[4] = ( LongB >> 8 ) & 0xFF;
+         Failed[5] = LongB & 0xFF;
+         Failed[6] = ( altt >> 8 ) & 0xFF;
+         Failed[7] = altt & 0xFF;
+         Failed[8] = hdp & 0xFF;
+         Failed[9] = sta & 0xFF;
+         Failed[10] = (Tb >> 16) & 0xFF;
+         Failed[11] = ( Tb >> 8 ) & 0xFF;
+         Failed[12] = Tb & 0xFF;
+         Failed[13] = BPB & 0xFF;
+         Failed[14] = Bs & 0xFF;
+
+
+
+
+
+
+
+
+
     
     lorawan_send(Failed, sizeof(Failed), LORAWAN_PORT, true);
 }
@@ -419,10 +468,8 @@ void lorawan_join() {
 
             // Trigger a false joined
             _lorawan_callback(EV_JOINED);
-            /**if (LMIC.devaddr != 0)
-            {
-                SendFailedData();
-            }*/
+                //SendFailedData();
+            
             
         }
 
@@ -486,21 +533,45 @@ void lorawan_send(uint8_t * data, uint8_t data_size, uint8_t port, bool confirme
         Serial.println(F("Failure in sending "));
         screen_print("Failed to send \n ");
          _lorawan_callback(EV_FAILED);
-         unsigned int lat =  (data[0]<<16 )|( data[1]<<8 )|data[2];
-         float Latdeg = ((lat / 16777215) * 180) - 90 ;
-         unsigned int longg = ( data[3]<<16 )|( data[4]<<8 )|data[5];
-         float Longdeg = ((longg / 16777215) * 360) - 180;
-         unsigned int alt = ( data[6]<<16 )|( data[7]<<8 );
-         unsigned int Hdop = data[8];
-         float stat = data[9];
-         unsigned int time = ( data[10]<<16 )|( data[11]<<8 )|data[12];
+         uint32_t lat =  (data[0]<<16 )|( data[1]<<8 )| data[2];
+         double Latdeg = ((lat / 16777215.0 ) * 180.0 ) - 90 ;
+         uint32_t longg = ( data[3]<<16 )|( data[4]<<8 )|data[5];
+         double Longdeg = ((longg / 16777215.0 ) * 360.0) - 180 ;
+         uint16_t alt = ( data[6]<<16 )|( data[7]<<8 );
+         uint8_t  Hdop = data[8];
+         uint8_t stat = data[9];
+         uint32_t time = ( data[10]<<16 )|( data[11]<<8 )|data[12];
          unsigned int Hour = time / 3600;
          unsigned int Min = (time % 3600)/60;
-         unsigned int Sec = time % 60;
+         unsigned int Sec = time  %60;
          unsigned int Bat = data[13];
-         int BattP = static_cast<int>((Bat/255) * 100); 
-         int BattS = data[14];
-         std::string LatdegS = std::to_string(Latdeg);
+         uint8_t BattP = static_cast<int>(( Bat / 255.0) * 100); 
+         uint8_t BattS = data[14];
+         char LatdegS [16];
+         char LongdegS [16];
+         char altS [16];
+         char HdoopS [16];
+         char statS [16];
+         char HourS [16];
+         char MinS [16];
+         char SecS [16];
+         char BattPS [16];
+         char BattSS [16];
+
+         dtostrf(Latdeg , 8 , 6 ,LatdegS ) ;
+         dtostrf (Longdeg , 8 , 6 , LongdegS) ; 
+         itoa(alt ,altS , 10 );
+         itoa (Hdop , HdoopS , 10); 
+         itoa(stat, statS ,10) ;
+         itoa (Hour , HourS , 10); 
+         itoa (Min , MinS , 10); 
+         itoa (Sec , SecS , 10); 
+         itoa (BattP , BattPS , 10); 
+         itoa (BattS , BattSS , 10); 
+
+
+
+         /**std::string LatdegS = std::to_string(Latdeg);
          std::string LongdegS = std::to_string(Longdeg);
          std::string altS = std::to_string(alt);
          std::string HdoopS = std::to_string(Hdop);
@@ -509,9 +580,10 @@ void lorawan_send(uint8_t * data, uint8_t data_size, uint8_t port, bool confirme
          std::string MinS = std::to_string(Min);
          std::string SecS = std::to_string(Sec);
          std::string BattPS = std::to_string(BattP);
-         std::string BattSS = std::to_string(BattS);
-         std::string FailData = LatdegS + " " + LongdegS + " "  + altS  + " " + HdoopS  + " " + statS + " "  + HourS + " "  + MinS + " "  + SecS + " "  + BattPS + " "  + BattSS ; 
-         const char *dst = FailData.c_str();
+         std::string BattSS = std::to_string(BattS);**/
+
+         std::string FailData = std::string (LatdegS) + " " + std::string (LongdegS) + " "  + std::string (altS)  + " " + std::string (HdoopS)  + " " + std::string (statS) + " "  + std::string(HourS) + " "  +std::string( MinS) + " "  + std::string (SecS) + " "  +std::string (BattPS) + " "  + std::string (BattSS) ; 
+         const char *dst = FailData.c_str(); 
 
           // const char* dst = reinterpret_cast< const char*>(data);
         
