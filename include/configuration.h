@@ -38,6 +38,7 @@ void lorawan_register(void (*callback)(uint8_t message));
 // -----------------------------------------------------------------------------
 // Configuration
 // -----------------------------------------------------------------------------
+#define FAILED_DATA_FILE "/failedData.txt"
 
 // Select which T-Beam board is being used. Only uncomment one.
 // #define T_BEAM_V07  // AKA Rev0 (first board released)

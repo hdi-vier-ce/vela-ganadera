@@ -65,7 +65,7 @@ void removeDir(fs::FS &fs, const char * path){
 
 std::queue<String> readFile(fs::FS &fs, const char * path){
     Serial.printf("Reading file: %s\r\n", path);
-
+    
     File file = fs.open(path);
     if(!file || file.isDirectory()){
         Serial.println("- failed to open file for reading");
@@ -73,29 +73,25 @@ std::queue<String> readFile(fs::FS &fs, const char * path){
     }
 
     Serial.println("- read from file:");
-    Serial.println(file.read());
+    //Serial.println(file.read());
     std::queue<String> FileQueue ; 
     String line ; 
     while(file.available()){
         char data = file.read();
         if (data == '\n')
-        {
+        {   Serial.println(line);
             FileQueue.push(line); 
             line =""; 
         }else {
             line += data ; 
         }
-        if (!line.isEmpty())
-        {
+    }
+    if (!line.isEmpty())
+        {   Serial.println(line);
             FileQueue.push(line);
         }
-        
-        return FileQueue ; 
-        
-        
-        
-    }
     file.close();
+    return FileQueue ; 
 }
 
 void writeFile(fs::FS &fs, const char * path, const char * message){
@@ -125,6 +121,7 @@ void appendFile(fs::FS &fs, const char * path, const char * message){
     }
     if(file.print(message)){
         Serial.println("- message appended");
+        Serial.println(message); 
     } else {
         Serial.println("- append failed");
     }
@@ -148,3 +145,4 @@ void deleteFile(fs::FS &fs, const char * path){
         Serial.println("- delete failed");
     }
 }
+

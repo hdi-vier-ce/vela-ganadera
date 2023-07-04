@@ -415,6 +415,7 @@ void loop() {
     gps_loop();
     lorawan_loop();
     screen_loop();
+    //SendFailedData();
 
     if (packetSent) {
         packetSent = false;

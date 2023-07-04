@@ -294,12 +294,16 @@ bool lorawan_setup() {
 }
 std::queue<String> Queue ; 
 void SendFailedData () {
+    
+    
     Queue = readFile(LittleFS, FAILED_DATA_FILE);
     while (!Queue.empty())
     {
         String data = Queue.front();
         Queue.pop();
         //std::string data;
+        Serial.println("sending data to LoRaWAN");
+        Serial.println(data);
         
         // char* chardata = const_cast<char*>(data.c_str());
 
@@ -349,10 +353,11 @@ void SendFailedData () {
 
     
     lorawan_send(Failed, sizeof(Failed), LORAWAN_PORT, true);
+    delay(30); 
 }
+      }
     
-    
-}
+
 
 
 void lorawan_join() {
@@ -582,12 +587,12 @@ void lorawan_send(uint8_t * data, uint8_t data_size, uint8_t port, bool confirme
          std::string BattPS = std::to_string(BattP);
          std::string BattSS = std::to_string(BattS);**/
 
-         std::string FailData = std::string (LatdegS) + " " + std::string (LongdegS) + " "  + std::string (altS)  + " " + std::string (HdoopS)  + " " + std::string (statS) + " "  + std::string(HourS) + " "  +std::string( MinS) + " "  + std::string (SecS) + " "  +std::string (BattPS) + " "  + std::string (BattSS) ; 
+         std::string FailData = std::string (LatdegS) + " " + std::string (LongdegS) + " "  + std::string (altS)  + " " + std::string (HdoopS)  + " " + std::string (statS) + " "  + std::string(HourS) + " "  +std::string( MinS) + " "  + std::string (SecS) + " "  +std::string (BattPS) + " "  + std::string (BattSS)+'\n' ; 
          const char *dst = FailData.c_str(); 
 
           // const char* dst = reinterpret_cast< const char*>(data);
         
-           writeFile(LittleFS, FAILED_DATA_FILE, dst);
+           appendFile(LittleFS, FAILED_DATA_FILE, dst);
             
          
          _lorawan_callback(EV_QUEUED);
