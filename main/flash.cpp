@@ -91,6 +91,8 @@ std::queue<String> readFile(fs::FS &fs, const char * path){
             FileQueue.push(line);
         }
     file.close();
+    file = fs.open(path , FILE_WRITE); 
+    file.close(); 
     return FileQueue ; 
 }
 

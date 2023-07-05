@@ -87,7 +87,7 @@ void buildPacket(uint8_t txBuffer[]);  // needed for platformio
  * If we have a valid position send it to the server.
  * @return true if we decided to send.
  */
-
+bool rejoin = false ; 
 bool trySend() {
     packetSent = false;
     // We also wait for altitude being not exactly zero, because the GPS chip generates a bogus 0 alt report when first powered on
@@ -415,8 +415,10 @@ void loop() {
     gps_loop();
     lorawan_loop();
     screen_loop();
-    //SendFailedData();
-
+    if (rejoin==false){
+    SendFailedData();
+    rejoin = true ; 
+      }
     if (packetSent) {
         packetSent = false;
         sleep();
