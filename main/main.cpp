@@ -67,7 +67,7 @@ void setPmu_irq(bool value){
 
 #if defined(PAYLOAD_USE_FULL)
     // includes number of satellites and accuracy
-    static uint8_t txBuffer[18];
+    static uint8_t txBuffer[30];
 #elif defined(PAYLOAD_USE_CAYENNE)
     // CAYENNE DF
     static uint8_t txBuffer[11] = {0x03, 0x88, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00};
@@ -415,8 +415,8 @@ void loop() {
     gps_loop();
     lorawan_loop();
     screen_loop();
-    if (rejoin==false){
-    SendFailedData();
+    if(rejoin==false){
+    ReadData ();
     rejoin = true ; 
       }
     if (packetSent) {

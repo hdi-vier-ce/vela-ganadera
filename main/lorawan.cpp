@@ -300,7 +300,7 @@ bool lorawan_setup()
     bool InitLMIC = 1 == os_init_ex((const void *)&lmic_pins);
     return InitLMIC;
 }
-std::queue<String> Queue;
+/**std::queue<String> Queue;
 void SendFailedData()
 {
 
@@ -354,7 +354,7 @@ void SendFailedData()
         lorawan_send(Failed, sizeof(Failed), LORAWAN_PORT, true);
         delay(49000);
     }
-}
+}**/
 
 void lorawan_join()
 {

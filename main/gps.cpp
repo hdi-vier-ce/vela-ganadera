@@ -24,14 +24,22 @@
 #include "gps.h"
 #include <Wire.h>
 #include "main.h"
+#include <queue>
+#include "FS.h"
+#include "LittleFS.h"
+#include <flash.h>
+#include <iostream>
+#include <sstream>
+#include <iterator>
 
 uint32_t LatitudeBinary;
 uint32_t LongitudeBinary;
 uint16_t altitudeGps;
 uint8_t hdopGps;
 uint8_t sats;
-uint32_t TimeBr ;
+
 AXP20X_Class axp2;
+std::queue<String> Queue;
 
 
 char t[32]; // used to sprintf for Serial output
@@ -75,17 +83,14 @@ void gps_loop() {
         _gps.encode(_serial_gps.read());
     }
 }
-/**void Time_Remove (char* Tibuffer){
-       Serial.print("Time: ");
-       Serial.println(Tibuffer);
-       std::string Timebufferr = Tibuffer ;
-       std::string TimeR = Timebufferr + " : the power cable pull off" ;  
-}*/
+void ReadData () {
+   Queue = readFile(LittleFS, FAILED_DATA_FILE);
+}
 
 #if defined(PAYLOAD_USE_FULL)
 
     // More data than PAYLOAD_USE_CAYENNE
-    void buildPacket(uint8_t txBuffer[18])
+    void buildPacket(uint8_t txBuffer[30])
     {
         LatitudeBinary = ((_gps.location.lat() + 90) / 180.0) * 16777215;
         LongitudeBinary = ((_gps.location.lng() + 180) / 360.0) * 16777215;
@@ -102,14 +107,7 @@ void gps_loop() {
        }else {
         Status =0 ; 
        }
-       if (getAxp().isVbusRemoveIRQ()){
-        char  BuffertimeR[9] ;
-        gps_time(BuffertimeR,sizeof(BuffertimeR));
-        TimeBr = ((_gps.time.hour()*3600)+ (_gps.time.minute()*60)+_gps.time.second());
-        Serial.print("BinaryR: ");
-        Serial.println(TimeBr);
-        
-       }
+       
        
 
         sprintf(t, "Lat: %f", _gps.location.lat());
@@ -128,7 +126,7 @@ void gps_loop() {
        uint32_t timebinary = ((_gps.time.hour()*3600)+ (_gps.time.minute()*60)+_gps.time.second());
        Serial.print("Binary: ");
        Serial.println(timebinary);
-       //battery pourcentage to uint8_t 
+       
        uint8_t BatPercentage = BatPercent;
        Serial.print("Battery pourcentage1: ");
        Serial.println(BatPercent);
@@ -136,9 +134,40 @@ void gps_loop() {
        Serial.println(BatPercentage);
        Serial.print("statu: ");
        Serial.println(Status);
-       //Serial.print("BinaryR: ");
-       //Serial.println(TimeBr);
+
        
+       if (!Queue.empty())
+    {   
+        String data = Queue.front();
+        Queue.pop();
+        // std::string data;
+        Serial.println("sending data to LoRaWAN");
+        Serial.println(data);
+
+        const char *c = data.c_str();
+        std::istringstream iss(c);
+        std::vector<std ::string> tokens{std::istream_iterator<std::string>{iss}, std::istream_iterator<std::string>{}};
+        
+        double latt = std::stod(tokens[0]);
+        char Latdeeg[16];
+        dtostrf(latt, 8, 6, Latdeeg);
+        Serial.println(Latdeeg);
+        double loong = std::stod(tokens[1]);
+        uint16_t altt = std::stoi(tokens[2]);
+        uint8_t hdp = std::stoi(tokens[3]);
+        char HopS[16];
+        itoa(hdp, HopS, 10);
+        Serial.println(HopS);
+        uint8_t sta = std::stoi(tokens[4]);
+        unsigned int hr = std::stoi(tokens[5]);
+        unsigned int Mi = std::stoi(tokens[6]);
+        unsigned int Sec = std::stoi(tokens[7]);
+        uint8_t BPc = std::stoi(tokens[8]);
+        uint8_t Bs = std::stoi(tokens[9]);
+        uint32_t LatB = ((latt + 90.0) / 180.0) * 16777215.0;
+        uint32_t LongB = ((loong + 180.0) / 360.0) * 16777215.0;
+        uint32_t Tb = ((hr * 3600) + (Mi * 60) + Sec);
+        uint8_t BPB = (BPc / 100.0) * 255.0;
 
 
         txBuffer[0] = ( LatitudeBinary >> 16 ) & 0xFF;
@@ -156,12 +185,57 @@ void gps_loop() {
         txBuffer[12] = timebinary & 0xFF;
         txBuffer[13] = BatPercentage & 0xFF;
         txBuffer[14] = Status & 0xFF;
-        txBuffer[15] = (TimeBr >> 16) & 0xFF;
-        txBuffer[16] = ( TimeBr >> 8 ) & 0xFF;
-        txBuffer[17] = TimeBr & 0xFF;
+        txBuffer[15] = ( LatB >> 16 ) & 0xFF;
+        txBuffer[16] = ( LatB >> 8 ) & 0xFF;
+        txBuffer[17] = LatB & 0xFF;
+        txBuffer[18] = ( LongB >> 16 ) & 0xFF;
+        txBuffer[19] = ( LongB >> 8 ) & 0xFF;
+        txBuffer[20] = LongB & 0xFF;
+        txBuffer[21] = ( altt >> 8 ) & 0xFF;
+        txBuffer[22] = altt & 0xFF;
+        txBuffer[23] = hdp & 0xFF;
+        txBuffer[24] = sta & 0xFF;
+        txBuffer[25] = (Tb >> 16) & 0xFF;
+        txBuffer[26] = ( Tb >> 8 ) & 0xFF;
+        txBuffer[27] = Tb & 0xFF;
+        txBuffer[28] = BPB & 0xFF;
+        txBuffer[29] = Bs & 0xFF;
+        
 
 
 
+    } else {
+        txBuffer[0] = ( LatitudeBinary >> 16 ) & 0xFF;
+        txBuffer[1] = ( LatitudeBinary >> 8 ) & 0xFF;
+        txBuffer[2] = LatitudeBinary & 0xFF;
+        txBuffer[3] = ( LongitudeBinary >> 16 ) & 0xFF;
+        txBuffer[4] = ( LongitudeBinary >> 8 ) & 0xFF;
+        txBuffer[5] = LongitudeBinary & 0xFF;
+        txBuffer[6] = ( altitudeGps >> 8 ) & 0xFF;
+        txBuffer[7] = altitudeGps & 0xFF;
+        txBuffer[8] = hdopGps & 0xFF;
+        txBuffer[9] = sats & 0xFF;
+        txBuffer[10] = (timebinary >> 16) & 0xFF;
+        txBuffer[11] = ( timebinary >> 8 ) & 0xFF;
+        txBuffer[12] = timebinary & 0xFF;
+        txBuffer[13] = BatPercentage & 0xFF;
+        txBuffer[14] = Status & 0xFF;
+        txBuffer[15] =  0 ;
+        txBuffer[16] =  0 ;
+        txBuffer[17] =  0 ;
+        txBuffer[18] =  0;
+        txBuffer[19] =  0;
+        txBuffer[20] =  0;
+        txBuffer[21] =  0;
+        txBuffer[22] =  0;
+        txBuffer[23] =  0;
+        txBuffer[24] =  0;
+        txBuffer[25] =  0;
+        txBuffer[26] =  0;
+        txBuffer[27] =  0;
+        txBuffer[28] =  0;
+        txBuffer[29] =  0;
+        }
     }
 
 #elif defined(PAYLOAD_USE_CAYENNE)
