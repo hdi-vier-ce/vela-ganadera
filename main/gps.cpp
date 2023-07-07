@@ -53,7 +53,6 @@ void gps_time(char * buffer, uint8_t size) {
     snprintf(buffer, size, "%02d:%02d:%02d", _gps.time.hour(), _gps.time.minute(), _gps.time.second());
 }
 
-
 float gps_latitude() {
     return _gps.location.lat();
 }
