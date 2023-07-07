@@ -184,6 +184,7 @@ void sleep() {
 #endif
 }
 
+
 bool connect = false ;
 bool Read = false ; 
 void callback(uint8_t message) {
@@ -216,6 +217,7 @@ void callback(uint8_t message) {
         screen_print("Message sent\n");
         packetQueued = false;
         packetSent = true ;
+        
     }
     /*if (EV_REJOIN_FAILED != message)
    {    connect = true ; 
@@ -424,10 +426,11 @@ void loop() {
     if(Read){
         if (counter==0)
         {
-     
-    ReadData ();
-    Read = false ; 
-      } }
+           ReadData ();
+           Read = false ; 
+           counter = 1 ; 
+        } 
+      }
     if (packetSent) {
         packetSent = false;
         sleep();

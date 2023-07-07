@@ -138,7 +138,7 @@ void ReadData () {
        if (!Queue.empty())
     {   
         String data = Queue.front();
-        Queue.pop();
+        
         // std::string data;
         Serial.println("sending data to LoRaWAN");
         Serial.println(data);
@@ -199,6 +199,10 @@ void ReadData () {
         txBuffer[27] = Tb & 0xFF;
         txBuffer[28] = BPB & 0xFF;
         txBuffer[29] = Bs & 0xFF;
+        if (LMIC.txrxFlags & TXRX_ACK)
+        { 
+            Queue.pop();
+        }
         
 
 
