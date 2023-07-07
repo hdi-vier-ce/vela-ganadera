@@ -82,12 +82,11 @@ esp_sleep_source_t wakeCause;  // the reason we booted this time
 // -----------------------------------------------------------------------------
 
 void buildPacket(uint8_t txBuffer[]);  // needed for platformio
-
+int counter = 0 ; 
 /**
  * If we have a valid position send it to the server.
  * @return true if we decided to send.
  */
-bool rejoin = false ; 
 bool trySend() {
     packetSent = false;
     // We also wait for altitude being not exactly zero, because the GPS chip generates a bogus 0 alt report when first powered on
@@ -186,10 +185,12 @@ void sleep() {
 }
 
 bool connect = false ;
+bool Read = false ; 
 void callback(uint8_t message) {
     bool lorawan_joined = false;
     if (EV_JOINED == message) {
         lorawan_joined = true;
+         
     }
     if (EV_JOINING == message) {
         if (lorawan_joined) {
@@ -202,7 +203,9 @@ void callback(uint8_t message) {
     if (EV_REJOIN_FAILED == message) screen_print("LoRaWAN rejoin failed\n");
     if (EV_RESET == message) screen_print("Reset LoRaWAN connection\n");
     if (EV_LINK_DEAD == message) screen_print("LoRaWAN link dead\n");
-    if (EV_ACK == message) screen_print("ACK received\n");
+    if (EV_ACK == message) { 
+        screen_print("ACK received\n");
+        Read = true ; }
     if (EV_FAILED == message) screen_print("Failed to receive ACK \n");
     if (EV_PENDING == message) screen_print("Message discarded\n");
     if (EV_QUEUED == message) screen_print("Message queued\n");
@@ -415,10 +418,16 @@ void loop() {
     gps_loop();
     lorawan_loop();
     screen_loop();
-    if(rejoin==false){
+    /**if(LMIC.opmode & OP_REJOIN){
+        esp_restart(); 
+    }**/
+    if(Read){
+        if (counter==0)
+        {
+     
     ReadData ();
-    rejoin = true ; 
-      }
+    Read = false ; 
+      } }
     if (packetSent) {
         packetSent = false;
         sleep();
