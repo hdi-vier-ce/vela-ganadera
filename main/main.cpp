@@ -38,7 +38,11 @@
 #define Configuration_DATA_FILE "/Configuration.txt"
 
 int SEND_INTERVAL ;
- 
+struct {
+  char Sendintervall;
+  char ResetIntervall;
+} myStructure;
+
 
 String baChStatus = "No charging";
 
@@ -241,11 +245,20 @@ void callback(uint8_t message) {
         for (uint8_t i = 0; i < len; i++) {
             snprintf(buffer, sizeof(buffer), "%02X", data[i]);
             snprintf(NextBuffer, sizeof(NextBuffer), "%X", data[i+1]);
-             if (data[i]==00)
-            {   
-                  writeFile(LittleFS, Configuration_DATA_FILE , NextBuffer);
-                 
-            }
+             switch (data[i])
+             {
+             case 00:
+                 myStructure.Sendintervall = NextBuffer ; 
+                 myStructure.ResetIntervall = myStructure.ResetIntervall ; 
+                 writeFile(LittleFS, Configuration_DATA_FILE , NextBuffer);
+                break;
+            case  01:   
+                 myStructure.ResetIntervall = NextBuffer ; 
+                 myStructure.Sendintervall = myStructure.Sendintervall ; 
+            default:
+                break;
+             }
+            
 
             screen_print(buffer);
         }
