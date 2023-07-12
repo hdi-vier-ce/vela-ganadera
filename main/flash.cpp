@@ -147,4 +147,19 @@ void deleteFile(fs::FS &fs, const char * path){
         Serial.println("- delete failed");
     }
 }
+char read(fs::FS &fs, const char * path){
+   Serial.printf("Reading file: %s\r\n", path);
+   char temps ; 
+   File file = fs.open(path);
+   if(!file || file.isDirectory()){
+       Serial.println("− failed to open file for reading");
+       return temps ;
+   }
 
+   Serial.println("− read from file:");
+   while(file.available()){
+     temps = file.read();
+      Serial.write(temps);
+   }
+   return temps ; 
+}

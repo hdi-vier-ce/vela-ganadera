@@ -31,7 +31,14 @@
 #include "sleep.h"
 #include "main.h"
 #include <string>
+#include "FS.h"
+#include "LittleFS.h"
+#include <flash.h>
 
+#define Configuration_DATA_FILE "/Configuration.txt"
+
+int SEND_INTERVAL = 60 *1000 ; 
+ 
 
 String baChStatus = "No charging";
 
@@ -39,6 +46,7 @@ bool ssd1306_found = false;
 bool axp192_found = false;
 AXP20X_Class axp;
 bool pmu_irq = false;
+bool Reset = true ; 
 
 bool packetSent, packetQueued;
 float BatteryPercentage = axp.getBattPercentage();
@@ -184,7 +192,7 @@ void sleep() {
 #endif
 }
 
-
+bool Downlink = false ; 
 bool connect = false ;
 bool Read = false ; 
 void callback(uint8_t message) {
@@ -219,27 +227,33 @@ void callback(uint8_t message) {
         packetSent = true ;
         
     }
-    /*if (EV_REJOIN_FAILED != message)
-   {    connect = true ; 
-        ConnectionStatues (connect);
-
-    }*/
+    
     if (EV_RESPONSE == message) {
+         
         screen_print("[LoRaWAN] Response: ");
 
         size_t len = lorawan_response_len();
         uint8_t data[len];
         lorawan_response(data, len);
-
+        
         char buffer[6];
+        char NextBuffer [6];
         for (uint8_t i = 0; i < len; i++) {
             snprintf(buffer, sizeof(buffer), "%02X", data[i]);
+            snprintf(NextBuffer, sizeof(NextBuffer), "%X", data[i+1]);
+             if (data[i]==00)
+            {   
+                  writeFile(LittleFS, Configuration_DATA_FILE , NextBuffer);
+                 
+            }
+
             screen_print(buffer);
         }
         screen_print("\n");
+        Downlink = true ;
+        
     }
 }
-
 
 void scanI2Cdevice(void)
 {
@@ -415,7 +429,9 @@ void setup()
         lorawan_adr(LORAWAN_ADR);
     }
 }
-
+/**char temp = read(LittleFS, Configuration_DATA_FILE);
+int send_int = std::stoi (&temp);
+int send_ = (send_int * 60) * 1000 ;**/ 
 void loop() {
     gps_loop();
     lorawan_loop();
@@ -464,15 +480,37 @@ void loop() {
             #endif
         }
     }
-
+    
     // Send every SEND_INTERVAL millis
     static uint32_t last = 0;
     static bool first = true;
+    if (Downlink)
+    {
+    Downlink = false ;
+    char temp = read (LittleFS, Configuration_DATA_FILE);
+    int send_int = std::stoi (&temp);
+    int send_ = (send_int * 60) * 1000 ;
+    SEND_INTERVAL = send_ ;
+    }
+    if (Reset)
+    {
+    char tem = read (LittleFS, Configuration_DATA_FILE);
+    int sendTemp = std::stoi (&tem);
+    int sendTemps = (sendTemp * 60) * 1000 ;
+           if (sendTemps != SEND_INTERVAL)
+           {
+            SEND_INTERVAL = sendTemps ;
+           }
+         Reset = false ;   
+    }
+    
+
     if (0 == last || millis() - last > SEND_INTERVAL) {
         if (trySend()) {
             last = millis();
             first = false;
             Serial.println("TRANSMITTED");
+            
         }
         else {
             if (first) {
@@ -491,4 +529,5 @@ void loop() {
             delay(100);
         }
     }
-}
+    }
+
