@@ -37,7 +37,7 @@
 
 #define Configuration_DATA_FILE "/Configuration.txt"
 
-int SEND_INTERVAL = 60 *1000 ; 
+int SEND_INTERVAL ;
  
 
 String baChStatus = "No charging";
@@ -489,18 +489,14 @@ void loop() {
     Downlink = false ;
     char temp = read (LittleFS, Configuration_DATA_FILE);
     int send_int = std::stoi (&temp);
-    int send_ = (send_int * 60) * 1000 ;
-    SEND_INTERVAL = send_ ;
+    SEND_INTERVAL = (send_int * 60) * 1000 ;
+   
     }
     if (Reset)
     {
     char tem = read (LittleFS, Configuration_DATA_FILE);
     int sendTemp = std::stoi (&tem);
-    int sendTemps = (sendTemp * 60) * 1000 ;
-           if (sendTemps != SEND_INTERVAL)
-           {
-            SEND_INTERVAL = sendTemps ;
-           }
+    SEND_INTERVAL = (sendTemp * 60) * 1000 ;
          Reset = false ;   
     }
     
