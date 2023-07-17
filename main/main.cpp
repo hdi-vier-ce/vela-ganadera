@@ -37,11 +37,8 @@
 
 #define Configuration_DATA_FILE "/Configuration.txt"
 
-int SEND_INTERVAL ;
-struct {
-  char Sendintervall;
-  char ResetIntervall;
-} myStructure;
+int SEND_INTERVAL = 60 * 1000;
+
 
 
 String baChStatus = "No charging";
@@ -130,10 +127,7 @@ bool trySend() {
     lorawan_send(txBuffer, sizeof(txBuffer), LORAWAN_PORT, confirmed);
     return true;
    }
-   //else {
-        //return false;
-    //}
-//}
+   
 
 void doDeepSleep(uint64_t msecToWake)
 {
@@ -242,26 +236,20 @@ void callback(uint8_t message) {
         
         char buffer[6];
         char NextBuffer [6];
-        for (uint8_t i = 0; i < len; i++) {
+        
+        for (uint8_t i = 0; i < len-1; i++) {
             snprintf(buffer, sizeof(buffer), "%02X", data[i]);
             snprintf(NextBuffer, sizeof(NextBuffer), "%X", data[i+1]);
-             switch (data[i])
-             {
-             case 00:
-                 myStructure.Sendintervall = NextBuffer ; 
-                 myStructure.ResetIntervall = myStructure.ResetIntervall ; 
-                 writeFile(LittleFS, Configuration_DATA_FILE , NextBuffer);
-                break;
-            case  01:   
-                 myStructure.ResetIntervall = NextBuffer ; 
-                 myStructure.Sendintervall = myStructure.Sendintervall ; 
-            default:
-                break;
-             }
             
-
-            screen_print(buffer);
+             if (data[i]==00)
+             {
+              writeFile(LittleFS, Configuration_DATA_FILE , NextBuffer);
+             }
+             
+            
         }
+        
+        screen_print(buffer);
         screen_print("\n");
         Downlink = true ;
         
@@ -442,16 +430,12 @@ void setup()
         lorawan_adr(LORAWAN_ADR);
     }
 }
-/**char temp = read(LittleFS, Configuration_DATA_FILE);
-int send_int = std::stoi (&temp);
-int send_ = (send_int * 60) * 1000 ;**/ 
+
 void loop() {
     gps_loop();
     lorawan_loop();
     screen_loop();
-    /**if(LMIC.opmode & OP_REJOIN){
-        esp_restart(); 
-    }**/
+   
     if(Read){
         if (counter==0)
         {
@@ -510,7 +494,7 @@ void loop() {
     char tem = read (LittleFS, Configuration_DATA_FILE);
     int sendTemp = std::stoi (&tem);
     SEND_INTERVAL = (sendTemp * 60) * 1000 ;
-         Reset = false ;   
+    Reset = false ;   
     }
     
 
