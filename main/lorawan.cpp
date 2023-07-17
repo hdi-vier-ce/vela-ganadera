@@ -30,6 +30,7 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
 #include "configuration.h"
 #include "credentials.h"
 #include "lorawan.h"
+#include "main.h"
 #include "screen.h"
 #include <queue>
 #include "FS.h"
@@ -526,6 +527,7 @@ void lorawan_erase_prefs()
     }
 }
 uint32_t countRead = 0;
+int countreadF = 3 ; 
 void lorawan_send(uint8_t *data, uint8_t data_size, uint8_t port, bool confirmed)
 {
     lorawan_set_cnt(); // we are about to send using the current packet count
@@ -589,7 +591,9 @@ void lorawan_send(uint8_t *data, uint8_t data_size, uint8_t port, bool confirmed
         _lorawan_callback(EV_QUEUED);
         countRead ++ ;
         count++;
-        if (countRead % 3 == 0)
+      
+        
+        if (countRead % countreadF == 0)
         {
             ESP.restart();
         }
