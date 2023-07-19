@@ -301,61 +301,6 @@ bool lorawan_setup()
     bool InitLMIC = 1 == os_init_ex((const void *)&lmic_pins);
     return InitLMIC;
 }
-/**std::queue<String> Queue;
-void SendFailedData()
-{
-
-    Queue = readFile(LittleFS, FAILED_DATA_FILE);
-    while (!Queue.empty())
-    {
-        String data = Queue.front();
-        Queue.pop();
-        // std::string data;
-        Serial.println("sending data to LoRaWAN");
-        Serial.println(data);
-
-        // char* chardata = const_cast<char*>(data.c_str());
-
-        // uint8_t* Failed = reinterpret_cast< uint8_t*>(chardata);
-        const char *c = data.c_str();
-        std::istringstream iss(c);
-        std::vector<std ::string> tokens{std::istream_iterator<std::string>{iss}, std::istream_iterator<std::string>{}};
-        double latt = std::stod(tokens[0]);
-        double loong = std::stod(tokens[1]);
-        uint16_t altt = std::stoi(tokens[2]);
-        uint8_t hdp = std::stoi(tokens[3]);
-        uint8_t sta = std::stoi(tokens[4]);
-        unsigned int hr = std::stoi(tokens[5]);
-        unsigned int Mi = std::stoi(tokens[6]);
-        unsigned int Sec = std::stoi(tokens[7]);
-        uint8_t BPc = std::stoi(tokens[8]);
-        uint8_t Bs = std::stoi(tokens[9]);
-        uint32_t LatB = ((latt + 90.0) / 180.0) * 16777215.0;
-        uint32_t LongB = ((loong + 180.0) / 360.0) * 16777215.0;
-        uint32_t Tb = ((hr * 3600) + (Mi * 60) + Sec);
-        uint8_t BPB = (BPc / 100) * 255;
-        uint8_t Failed[18];
-
-        Failed[0] = (LatB >> 16) & 0xFF;
-        Failed[1] = (LatB >> 8) & 0xFF;
-        Failed[2] = LatB & 0xFF;
-        Failed[3] = (LongB >> 16) & 0xFF;
-        Failed[4] = (LongB >> 8) & 0xFF;
-        Failed[5] = LongB & 0xFF;
-        Failed[6] = (altt >> 8) & 0xFF;
-        Failed[7] = altt & 0xFF;
-        Failed[8] = hdp & 0xFF;
-        Failed[9] = sta & 0xFF;
-        Failed[10] = (Tb >> 16) & 0xFF;
-        Failed[11] = (Tb >> 8) & 0xFF;
-        Failed[12] = Tb & 0xFF;
-        Failed[13] = BPB & 0xFF;
-        Failed[14] = Bs & 0xFF;
-
-        lorawan_send(Failed, sizeof(Failed), LORAWAN_PORT, true);
-        delay(49000);
-    }
-}**/
 
 void lorawan_join()
 {
@@ -591,7 +536,12 @@ void lorawan_send(uint8_t *data, uint8_t data_size, uint8_t port, bool confirmed
         _lorawan_callback(EV_QUEUED);
         countRead ++ ;
         count++;
-      
+        char temp = read (LittleFS, Configuration_ResetFile_FILE);
+        if (isdigit(temp))
+        {
+            int Reset_int = std::stoi (&temp);
+            countreadF = Reset_int ; 
+        } 
         
         if (countRead % countreadF == 0)
         {

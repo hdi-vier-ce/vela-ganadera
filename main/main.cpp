@@ -35,7 +35,6 @@
 #include "LittleFS.h"
 #include <flash.h>
 
-#define Configuration_DATA_FILE "/Configuration.txt"
 
 int SEND_INTERVAL = 60 * 1000;
 
@@ -243,8 +242,14 @@ void callback(uint8_t message) {
             
              if (data[i]==00)
              {
-              writeFile(LittleFS, Configuration_DATA_FILE , NextBuffer);
+              writeFile(LittleFS, Configuration_SendFile_FILE , NextBuffer);
              }
+             if (data[i]==01)
+             {
+            writeFile(LittleFS, Configuration_ResetFile_FILE , NextBuffer);
+             }
+             }
+             
              
             
         }
@@ -254,7 +259,7 @@ void callback(uint8_t message) {
         Downlink = true ;
         
     }
-}
+
 
 void scanI2Cdevice(void)
 {
@@ -484,14 +489,14 @@ void loop() {
     if (Downlink)
     {
     Downlink = false ;
-    char temp = read (LittleFS, Configuration_DATA_FILE);
+    char temp = read (LittleFS, Configuration_SendFile_FILE);
     int send_int = std::stoi (&temp);
     SEND_INTERVAL = (send_int * 60) * 1000 ;
    
     }
     if (Reset)
     {
-    char tem = read (LittleFS, Configuration_DATA_FILE);
+    char tem = read (LittleFS, Configuration_SendFile_FILE);
     int sendTemp = std::stoi (&tem);
     SEND_INTERVAL = (sendTemp * 60) * 1000 ;
     Reset = false ;   
