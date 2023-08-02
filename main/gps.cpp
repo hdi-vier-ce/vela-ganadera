@@ -86,6 +86,29 @@ void ReadData () {
    Queue = readFile(LittleFS, FAILED_DATA_FILE);
 }
 
+void Buttonsetup() {
+  pinMode(BUTTON_1_PIN, INPUT_PULLUP); // Set the button pin as input with internal pull-up resistor
+  pinMode(BUTTON_2_PIN, INPUT_PULLUP);
+  attachInterrupt(digitalPinToInterrupt(BUTTON_1_PIN), buttonInterrupt, CHANGE);
+  attachInterrupt(digitalPinToInterrupt(BUTTON_2_PIN), buttonInterrupt, CHANGE); // Attach interrupt to the button pin
+}
+
+
+void buttonInterrupt() {
+  // Interrupt service routine
+  // Perform actions when the button state changes
+  int buttonState = digitalRead(BUTTON_2_PIN); 
+  int buttonState1 = digitalRead(BUTTON_1_PIN); // Read the button state
+  // Read the button state
+
+  if (buttonState == LOW) { // Button pressed
+    char Time [9] ; 
+    gps_time(Time,sizeof(Time));
+  } else { // Button released
+    // Perform actions when the button is released
+  }
+}
+
 #if defined(PAYLOAD_USE_FULL)
 
     // More data than PAYLOAD_USE_CAYENNE
