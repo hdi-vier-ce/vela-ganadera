@@ -31,16 +31,17 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
 #include "main.h"
 #include "screen.h"
 
-
-#define SCREEN_HEADER_HEIGHT    14
+#define SCREEN_HEADER_HEIGHT 14
 
 void screen_loop();
 
-SSD1306Wire * display;
+SSD1306Wire *display;
 uint8_t _screen_line = SCREEN_HEADER_HEIGHT - 1;
 
-void _screen_header() {
-    if(!display) return;
+void _screen_header()
+{
+    if (!display)
+        return;
 
     char buffer[20];
 
@@ -50,17 +51,17 @@ void _screen_header() {
     display->drawString(0, 2, buffer);
 
     // Datetime (if the axp192 PMIC is present, alternate between powerstats and time)
-    if(getAxp192_found() && millis()%8000 < 3000){
-        snprintf(buffer, sizeof(buffer), "%.1fV %.0fmA",getAxp().getBattVoltage()/1000, getAxp().getBattChargeCurrent() - getAxp().getBattDischargeCurrent());
-        
-    } 
+    if (getAxp192_found() && millis() % 8000 < 3000)
+    {
+        snprintf(buffer, sizeof(buffer), "%.1fV %.0fmA", getAxp().getBattVoltage() / 1000, getAxp().getBattChargeCurrent() - getAxp().getBattDischargeCurrent());
+    }
     else
-     {
+    {
         gps_time(buffer, sizeof(buffer));
     }
-    
+
     display->setTextAlignment(TEXT_ALIGN_CENTER);
-    display->drawString(display->getWidth()/2, 2, buffer);
+    display->drawString(display->getWidth() / 2, 2, buffer);
 
     // Satellite count
     display->setTextAlignment(TEXT_ALIGN_RIGHT);
@@ -68,62 +69,79 @@ void _screen_header() {
     display->drawXbm(display->getWidth() - SATELLITE_IMAGE_WIDTH, 0, SATELLITE_IMAGE_WIDTH, SATELLITE_IMAGE_HEIGHT, SATELLITE_IMAGE);
 }
 
-void screen_show_logo() {
-    if(!display) return;
+void screen_show_logo()
+{
+    if (!display)
+        return;
 
     uint8_t x = (display->getWidth() - TTN_IMAGE_WIDTH) / 2;
     uint8_t y = SCREEN_HEADER_HEIGHT + (display->getHeight() - SCREEN_HEADER_HEIGHT - TTN_IMAGE_HEIGHT) / 2 + 1;
     display->drawXbm(x, y, TTN_IMAGE_WIDTH, TTN_IMAGE_HEIGHT, TTN_IMAGE);
 }
 
-void screen_off() {
-    if(!display) return;
+void screen_off()
+{
+    if (!display)
+        return;
 
     display->displayOff();
 }
 
-void screen_on() {
-    if (!display) return;
+void screen_on()
+{
+    if (!display)
+        return;
 
     display->displayOn();
 }
 
-void screen_clear() {
-    if(!display) return;
+void screen_clear()
+{
+    if (!display)
+        return;
 
     display->clear();
 }
 
-void screen_print(const char * text, uint8_t x, uint8_t y, uint8_t alignment) {
+void screen_print(const char *text, uint8_t x, uint8_t y, uint8_t alignment)
+{
     DEBUG_MSG(text);
 
-    if(!display) return;
+    if (!display)
+        return;
 
-    display->setTextAlignment((OLEDDISPLAY_TEXT_ALIGNMENT) alignment);
+    display->setTextAlignment((OLEDDISPLAY_TEXT_ALIGNMENT)alignment);
     display->drawString(x, y, text);
 }
 
-void screen_print(const char * text, uint8_t x, uint8_t y) {
+void screen_print(const char *text, uint8_t x, uint8_t y)
+{
     screen_print(text, x, y, TEXT_ALIGN_LEFT);
 }
 
-void screen_print(const char * text) {
+void screen_print(const char *text)
+{
     Serial.printf("Screen: %s\n", text);
-    if(!display) return;
+    if (!display)
+        return;
 
     display->print(text);
-    if (_screen_line + 8 > display->getHeight()) {
+    if (_screen_line + 8 > display->getHeight())
+    {
         // scroll
     }
     _screen_line += 8;
     screen_loop();
 }
 
-void screen_update() {
-    if (display) display->display();
+void screen_update()
+{
+    if (display)
+        display->display();
 }
 
-void screen_setup() {
+void screen_setup()
+{
     // Display instance
     display = new SSD1306Wire(SSD1306_ADDRESS, I2C_SDA, I2C_SCL);
     display->init();
@@ -133,36 +151,39 @@ void screen_setup() {
     // Scroll buffer
     display->setLogBuffer(5, 30);
 }
-char  Buffertime[9] ;
-void screen_loop() {
-    if (!display) return;
+char Buffertime[9];
+void screen_loop()
+{
+    if (!display)
+        return;
 
-    
-    if (getAxp192_found() && getPmu_irq()) {
+    if (getAxp192_found() && getPmu_irq())
+    {
         setPmu_irq(false);
         getAxp().readIRQ();
-        if (getAxp().isChargingIRQ()) {
+        if (getAxp().isChargingIRQ())
+        {
             setBaChStatus("Charging");
-        } else {
+        }
+        else
+        {
             setBaChStatus("No Charging");
         }
-        if (getAxp().isVbusPlugInIRQ()) {
+        if (getAxp().isVbusPlugInIRQ())
+        {
             setBaChStatus("Charging");
-            
         }
-        if (getAxp().isVbusRemoveIRQ()) {
+        if (getAxp().isVbusRemoveIRQ())
+        {
             setBaChStatus("No Charging");
-            //gps_time(Buffertime,sizeof(Buffertime));
-            //Time_Remove (Buffertime);
-
+            // gps_time(Buffertime,sizeof(Buffertime));
+            // Time_Remove (Buffertime);
         }
-        
 
-        Serial.println(getBaChStatus()); //Prints charging status to screen
+        Serial.println(getBaChStatus()); // Prints charging status to screen
         digitalWrite(2, !digitalRead(2));
         getAxp().clearIRQ();
     }
-    
 
     display->clear();
     _screen_header();

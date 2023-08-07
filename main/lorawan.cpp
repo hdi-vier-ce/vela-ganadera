@@ -245,7 +245,6 @@ void onEvent(ev_t event)
     _lorawan_callback(event);
 }
 
-
 // -----------------------------------------------------------------------------
 // Public methods
 // -----------------------------------------------------------------------------
@@ -472,7 +471,7 @@ void lorawan_erase_prefs()
     }
 }
 uint32_t countRead = 0;
-int countreadF = 3 ; 
+int countreadF = 3;
 void lorawan_send(uint8_t *data, uint8_t data_size, uint8_t port, bool confirmed)
 {
     lorawan_set_cnt(); // we are about to send using the current packet count
@@ -525,29 +524,25 @@ void lorawan_send(uint8_t *data, uint8_t data_size, uint8_t port, bool confirmed
         itoa(BattP, BattPS, 10);
         itoa(BattS, BattSS, 10);
 
-        
-
         std::string FailData = std::string(LatdegS) + " " + std::string(LongdegS) + " " + std::string(altS) + " " + std::string(HdoopS) + " " + std::string(statS) + " " + std::string(HourS) + " " + std::string(MinS) + " " + std::string(SecS) + " " + std::string(BattPS) + " " + std::string(BattSS) + '\n';
         const char *dst = FailData.c_str();
-
 
         appendFile(LittleFS, FAILED_DATA_FILE, dst);
 
         _lorawan_callback(EV_QUEUED);
-        countRead ++ ;
+        countRead++;
         count++;
-        char temp = read (LittleFS, Configuration_ResetFile_FILE);
+        char temp = read(LittleFS, Configuration_ResetFile_FILE);
         if (isdigit(temp))
         {
-            int Reset_int = std::stoi (&temp);
-            countreadF = Reset_int ; 
-        } 
-        
+            int Reset_int = std::stoi(&temp);
+            countreadF = Reset_int;
+        }
+
         if (countRead % countreadF == 0)
         {
             ESP.restart();
         }
-        
 
         return;
     }
@@ -559,7 +554,6 @@ void lorawan_send(uint8_t *data, uint8_t data_size, uint8_t port, bool confirmed
 
     count++;
 }
-
 
 void lorawan_loop()
 {
