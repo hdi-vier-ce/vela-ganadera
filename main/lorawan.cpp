@@ -532,10 +532,10 @@ void lorawan_send(uint8_t *data, uint8_t data_size, uint8_t port, bool confirmed
         _lorawan_callback(EV_QUEUED);
         countRead++;
         count++;
-        char temp = read(LittleFS, Configuration_ResetFile_FILE);
-        if (isdigit(temp))
+        char te = read(LittleFS, Configuration_ResetFile_FILE);
+        if (isdigit(te))
         {
-            int Reset_int = std::stoi(&temp);
+            int Reset_int = std::stoi(&te);
             countreadF = Reset_int;
         }
 

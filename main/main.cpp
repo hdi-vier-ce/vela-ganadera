@@ -276,7 +276,6 @@ void callback(uint8_t message)
         }
     }
 
-    
     Downlink = true;
 }
 
@@ -540,10 +539,10 @@ void loop()
     }
     if (Reset)
     {
+        Reset = false;
         char tem = read(LittleFS, Configuration_SendFile_FILE);
         int sendTemp = std::stoi(&tem);
         SEND_INTERVAL = (sendTemp * 60) * 1000;
-        Reset = false;
     }
 
     if (0 == last || millis() - last > SEND_INTERVAL)

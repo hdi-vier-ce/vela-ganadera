@@ -130,10 +130,10 @@ void buttonInterrupt()
         char Time[9];
         gps_time(Time, sizeof(Time));
         Serial.println(Time);
-        Timeb = ((_gps.time.hour() * 3600) + (_gps.time.minute() * 60) + _gps.time.second()); 
-        LatitudeBi1 = ((_gps.location.lat() + 90) / 180.0) * 16777215;
-        LongitudeBi1 = ((_gps.location.lng() + 180) / 360.0) * 16777215;
-        altit1 = _gps.altitude.meters();
+        //Timeb = ((_gps.time.hour() * 3600) + (_gps.time.minute() * 60) + _gps.time.second()); 
+        //LatitudeBi1 = ((_gps.location.lat() + 90) / 180.0) * 16777215;
+       // LongitudeBi1 = ((_gps.location.lng() + 180) / 360.0) * 16777215;
+        //altit1 = _gps.altitude.meters();
 
     }
     else
@@ -142,7 +142,7 @@ void buttonInterrupt()
         char ReleasedTime[9];
         gps_time(ReleasedTime, sizeof(ReleasedTime));
         Serial.println(ReleasedTime);
-        TimeR = ((_gps.time.hour() * 3600) + (_gps.time.minute() * 60) + _gps.time.second()); 
+        //TimeR = ((_gps.time.hour() * 3600) + (_gps.time.minute() * 60) + _gps.time.second()); 
 
     }
         TimeP1 = Timeb - TimeR ; 
@@ -152,10 +152,10 @@ void buttonInterrupt()
         char Time2[9];
         gps_time(Time2, sizeof(Time2));
         Serial.println(Time2);
-        Timeb1 = ((_gps.time.hour() * 3600) + (_gps.time.minute() * 60) + _gps.time.second()); 
-        LatitudeBi2 = ((_gps.location.lat() + 90) / 180.0) * 16777215;
-        LongitudeBi2 = ((_gps.location.lng() + 180) / 360.0) * 16777215;
-        altit2 = _gps.altitude.meters();
+        //Timeb1 = ((_gps.time.hour() * 3600) + (_gps.time.minute() * 60) + _gps.time.second()); 
+        //LatitudeBi2 = ((_gps.location.lat() + 90) / 180.0) * 16777215;
+        ///LongitudeBi2 = ((_gps.location.lng() + 180) / 360.0) * 16777215;
+        //altit2 = _gps.altitude.meters();
 
     }
     else
@@ -163,8 +163,8 @@ void buttonInterrupt()
         // Perform actions when the button is released
         char ReleasedTime1[9];
         gps_time(ReleasedTime1, sizeof(ReleasedTime1));
-        TimeR1 = ((_gps.time.hour() * 3600) + (_gps.time.minute() * 60) + _gps.time.second()); 
-        Serial.println(TimeR1);
+        //TimeR1 = ((_gps.time.hour() * 3600) + (_gps.time.minute() * 60) + _gps.time.second()); 
+        Serial.println(ReleasedTime1);
 
     }
        TimeP2 = Timeb1 - TimeR1 ;
