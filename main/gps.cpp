@@ -38,22 +38,25 @@ uint16_t altitudeGps;
 uint8_t hdopGps;
 uint8_t sats;
 
-uint32_t Timeb ; 
-uint32_t TimeR ; 
-uint32_t TimeP1 ; 
+uint32_t Timeb;
+uint32_t TimeR;
 uint32_t LatitudeBi1;
 uint32_t LongitudeBi1;
 uint16_t altit1;
 
-uint32_t Timeb1 ; 
-uint32_t TimeR1 ; 
-uint32_t TimeP2 ; 
+uint32_t Timeb1;
+uint32_t TimeR1;
 uint32_t LatitudeBi2;
 uint32_t LongitudeBi2;
 uint16_t altit2;
 
+uint32_t Diff1;
+uint32_t Diff2;
+
 AXP20X_Class axp2;
 std::queue<String> Queue;
+std::queue<String> DataButton1;
+std::queue<String> DataButton2;
 
 char t[32]; // used to sprintf for Serial output
 
@@ -113,76 +116,123 @@ void Buttonsetup()
 {
     pinMode(BUTTON_1_PIN, INPUT_PULLUP); // Set the button pin as input with internal pull-up resistor
     pinMode(BUTTON_2_PIN, INPUT_PULLUP);
-    attachInterrupt(digitalPinToInterrupt(BUTTON_1_PIN), buttonInterrupt, CHANGE);
-    attachInterrupt(digitalPinToInterrupt(BUTTON_2_PIN), buttonInterrupt, CHANGE); // Attach interrupt to the button pin
+    attachInterrupt(digitalPinToInterrupt(BUTTON_2_PIN), button2Interrupt, CHANGE); // Attach interrupt to the button pin
+    attachInterrupt(digitalPinToInterrupt(BUTTON_1_PIN), button1Interrupt, CHANGE);
 }
 
-void buttonInterrupt()
+void button2Interrupt()
 {
     // Interrupt service routine
     // Perform actions when the button state changes
     int buttonState = digitalRead(BUTTON_2_PIN);
-    int buttonState1 = digitalRead(BUTTON_1_PIN); // Read the button state
     // Read the button state
 
-    if (buttonState== LOW)
+    if (buttonState == HIGH)
     {
         char Time[9];
         gps_time(Time, sizeof(Time));
+        Serial.println("button 1 ");
         Serial.println(Time);
-        //Timeb = ((_gps.time.hour() * 3600) + (_gps.time.minute() * 60) + _gps.time.second()); 
-        //LatitudeBi1 = ((_gps.location.lat() + 90) / 180.0) * 16777215;
-       // LongitudeBi1 = ((_gps.location.lng() + 180) / 360.0) * 16777215;
-        //altit1 = _gps.altitude.meters();
 
+        Timeb = ((_gps.time.hour() * 3600) + (_gps.time.minute() * 60) + _gps.time.second());
+        LatitudeBi2 = ((_gps.location.lat() + 90) / 180.0) * 16777215;
+        LongitudeBi2 = ((_gps.location.lng() + 180) / 360.0) * 16777215;
+        altit2 = _gps.altitude.meters();
     }
     else
-    {   // Button released
-        // Perform actions when the button is released
-        char ReleasedTime[9];
-        gps_time(ReleasedTime, sizeof(ReleasedTime));
-        Serial.println(ReleasedTime);
-        //TimeR = ((_gps.time.hour() * 3600) + (_gps.time.minute() * 60) + _gps.time.second()); 
+    {
+        char Time1[9];
+        Serial.println("button 1 released ");
+        gps_time(Time1, sizeof(Time1));
+        TimeR = ((_gps.time.hour() * 3600) + (_gps.time.minute() * 60) + _gps.time.second());
+        Diff1 = TimeR - Timeb;
+        char LatS[16];
+        char LongS[16];
+        char altiS[16];
+        char Diff[16];
+        itoa(LatitudeBi2, LatS, 10);
+        itoa(LongitudeBi2, LongS, 10);
+        itoa(altit2, altiS, 10);
+        itoa(Diff1, Diff, 10);
+        std::string ButtonData = std::string(LatS) + " " + std::string(LongS) + " " + std::string(altiS) + " " + std::string(Diff);
 
+        const char *data = ButtonData.c_str();
+        DataButton1.push(data);
+        Serial.println(data);
     }
-        TimeP1 = Timeb - TimeR ; 
+}
+void button1Interrupt()
+{
+    // Interrupt service routine
+    // Perform actions when the button state changes
+    int buttonState1 = digitalRead(BUTTON_1_PIN);
+    // Read the button state
 
-    if (buttonState1== LOW)
+    if (buttonState1 == HIGH)
+    {
+        char Timee[9];
+        gps_time(Timee, sizeof(Timee));
+        Serial.println("button 2 ");
+
+        Timeb1 = ((_gps.time.hour() * 3600) + (_gps.time.minute() * 60) + _gps.time.second());
+        LatitudeBi1 = ((_gps.location.lat() + 90) / 180.0) * 16777215;
+        LongitudeBi1 = ((_gps.location.lng() + 180) / 360.0) * 16777215;
+        altit1 = _gps.altitude.meters();
+    }
+    else
     {
         char Time2[9];
+        Serial.println("button 2 released ");
         gps_time(Time2, sizeof(Time2));
-        Serial.println(Time2);
-        //Timeb1 = ((_gps.time.hour() * 3600) + (_gps.time.minute() * 60) + _gps.time.second()); 
-        //LatitudeBi2 = ((_gps.location.lat() + 90) / 180.0) * 16777215;
-        ///LongitudeBi2 = ((_gps.location.lng() + 180) / 360.0) * 16777215;
-        //altit2 = _gps.altitude.meters();
-
+        TimeR1 = ((_gps.time.hour() * 3600) + (_gps.time.minute() * 60) + _gps.time.second());
+        Diff2 = TimeR1 - Timeb1;
+        char LatS1[16];
+        char LongS1[16];
+        char altiS1[16];
+        char Dif[16];
+        itoa(LatitudeBi1, LatS1, 10);
+        itoa(LongitudeBi1, LongS1, 10);
+        itoa(altit1, altiS1, 10);
+        itoa(Diff2, Dif, 10);
+        std::string ButtonData1 = std::string(LatS1) + " " + std::string(LongS1) + " " + std::string(altiS1) + " " + std::string(Dif);
+        const char *data1 = ButtonData1.c_str();
+        DataButton2.push(data1);
+        Serial.println(data1);
     }
-    else
-    {   // Button released
-        // Perform actions when the button is released
-        char ReleasedTime1[9];
-        gps_time(ReleasedTime1, sizeof(ReleasedTime1));
-        //TimeR1 = ((_gps.time.hour() * 3600) + (_gps.time.minute() * 60) + _gps.time.second()); 
-        Serial.println(ReleasedTime1);
-
-    }
-       TimeP2 = Timeb1 - TimeR1 ;
 }
+void WriteDataButton()
+{
+    while(!DataButton1.empty())
+    {
+        String DataButt = DataButton1.front();
+        const char *dat = DataButt.c_str();
+        Serial.println("FROM THE QUEUE");
+        Serial.println(DataButt);
+        appendFile(LittleFS, Button_Data, dat);
+        DataButton1.pop(); 
+    }
+    while(!DataButton2.empty())
+    {
+        String DataBut = DataButton2.front();
+        const char *da = DataBut.c_str();
+        Serial.println("FROM THE QUEUE");
+        Serial.println(DataBut);
+        appendFile(LittleFS, Button_Data, da);
+        DataButton2.pop(); 
+    }
 
+}
 #if defined(PAYLOAD_USE_FULL)
 
 // More data than PAYLOAD_USE_CAYENNE
 void buildPacket(uint8_t txBuffer[30])
 {
-  
-    void buttonInterrupt() ; 
+     WriteDataButton() ;
     LatitudeBinary = ((_gps.location.lat() + 90) / 180.0) * 16777215;
     LongitudeBinary = ((_gps.location.lng() + 180) / 360.0) * 16777215;
     altitudeGps = _gps.altitude.meters();
     hdopGps = _gps.hdop.value() / 10;
     sats = _gps.satellites.value();
-
     // get time
     char Buffertime[9];
     gps_time(Buffertime, sizeof(Buffertime));

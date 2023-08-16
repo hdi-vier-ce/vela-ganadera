@@ -438,6 +438,7 @@ void setup()
 
     // Init GPS
     gps_setup();
+    Buttonsetup() ; 
 
 // Show logo on first boot after removing battery
 #ifndef ALWAYS_SHOW_LOGO
@@ -478,6 +479,7 @@ void loop()
     gps_loop();
     lorawan_loop();
     screen_loop();
+    
 
     if (Read)
     {

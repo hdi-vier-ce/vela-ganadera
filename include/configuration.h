@@ -41,6 +41,7 @@ void lorawan_register(void (*callback)(uint8_t message));
 #define FAILED_DATA_FILE "/failedData.txt"
 #define Configuration_SendFile_FILE "/SendFile.txt"
 #define Configuration_ResetFile_FILE "/ResetFile.txt"
+#define Button_Data "/ButtonData.txt"
 
 
 

@@ -1,6 +1,6 @@
 #include <Arduino.h>
 
-void gps_time(char * buffer, uint8_t size);
+void gps_time(char * buffer, uint8_t size); 
 //void Time_Remove (char* Tibuffer);
 uint8_t gps_sats();
 float gps_hdop();
@@ -10,4 +10,7 @@ float gps_altitude();
 void gps_setup();
 void gps_loop();
 void ReadData () ; 
-void buttonInterrupt();
+void   button1Interrupt();
+void   button2Interrupt(); 
+void  Buttonsetup() ;
+void WriteDataButton() ; 
