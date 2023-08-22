@@ -57,6 +57,7 @@ AXP20X_Class axp2;
 std::queue<String> Queue;
 std::queue<String> DataButton1;
 std::queue<String> DataButton2;
+std::queue<String> Queue1;
 
 char t[32]; // used to sprintf for Serial output
 
@@ -131,7 +132,7 @@ void button2Interrupt()
     {
         char Time[9];
         gps_time(Time, sizeof(Time));
-        Serial.println("button 1 ");
+        Serial.println("button 2 ");
         Serial.println(Time);
 
         Timeb = ((_gps.time.hour() * 3600) + (_gps.time.minute() * 60) + _gps.time.second());
@@ -142,19 +143,21 @@ void button2Interrupt()
     else
     {
         char Time1[9];
-        Serial.println("button 1 released ");
+        Serial.println("button 2 released ");
         gps_time(Time1, sizeof(Time1));
         TimeR = ((_gps.time.hour() * 3600) + (_gps.time.minute() * 60) + _gps.time.second());
         Diff1 = TimeR - Timeb;
+        char TimeS[16];
         char LatS[16];
         char LongS[16];
         char altiS[16];
         char Diff[16];
+        itoa(Timeb, TimeS, 10);
         itoa(LatitudeBi2, LatS, 10);
         itoa(LongitudeBi2, LongS, 10);
         itoa(altit2, altiS, 10);
         itoa(Diff1, Diff, 10);
-        std::string ButtonData = std::string(LatS) + " " + std::string(LongS) + " " + std::string(altiS) + " " + std::string(Diff);
+        std::string ButtonData = "2 " + std::string(TimeS) + " " + std::string(LatS) + " " + std::string(LongS) + " " + std::string(altiS) + " " + std::string(Diff) + '\n';
 
         const char *data = ButtonData.c_str();
         DataButton1.push(data);
@@ -172,7 +175,7 @@ void button1Interrupt()
     {
         char Timee[9];
         gps_time(Timee, sizeof(Timee));
-        Serial.println("button 2 ");
+        Serial.println("button 1 ");
 
         Timeb1 = ((_gps.time.hour() * 3600) + (_gps.time.minute() * 60) + _gps.time.second());
         LatitudeBi1 = ((_gps.location.lat() + 90) / 180.0) * 16777215;
@@ -182,19 +185,21 @@ void button1Interrupt()
     else
     {
         char Time2[9];
-        Serial.println("button 2 released ");
+        Serial.println("button 1 released ");
         gps_time(Time2, sizeof(Time2));
         TimeR1 = ((_gps.time.hour() * 3600) + (_gps.time.minute() * 60) + _gps.time.second());
         Diff2 = TimeR1 - Timeb1;
+        char TimeS1[16];
         char LatS1[16];
         char LongS1[16];
         char altiS1[16];
         char Dif[16];
+        itoa(Timeb1, TimeS1, 10);
         itoa(LatitudeBi1, LatS1, 10);
         itoa(LongitudeBi1, LongS1, 10);
         itoa(altit1, altiS1, 10);
         itoa(Diff2, Dif, 10);
-        std::string ButtonData1 = std::string(LatS1) + " " + std::string(LongS1) + " " + std::string(altiS1) + " " + std::string(Dif);
+        std::string ButtonData1 = "1 " + std::string(TimeS1) + " " + std::string(LatS1) + " " + std::string(LongS1) + " " + std::string(altiS1) + " " + std::string(Dif) + '\n';
         const char *data1 = ButtonData1.c_str();
         DataButton2.push(data1);
         Serial.println(data1);
@@ -202,32 +207,31 @@ void button1Interrupt()
 }
 void WriteDataButton()
 {
-    while(!DataButton1.empty())
+    while (!DataButton1.empty())
     {
         String DataButt = DataButton1.front();
         const char *dat = DataButt.c_str();
         Serial.println("FROM THE QUEUE");
         Serial.println(DataButt);
         appendFile(LittleFS, Button_Data, dat);
-        DataButton1.pop(); 
+        DataButton1.pop();
     }
-    while(!DataButton2.empty())
+    while (!DataButton2.empty())
     {
         String DataBut = DataButton2.front();
         const char *da = DataBut.c_str();
         Serial.println("FROM THE QUEUE");
         Serial.println(DataBut);
         appendFile(LittleFS, Button_Data, da);
-        DataButton2.pop(); 
+        DataButton2.pop();
     }
-
 }
 #if defined(PAYLOAD_USE_FULL)
 
 // More data than PAYLOAD_USE_CAYENNE
-void buildPacket(uint8_t txBuffer[30])
+void buildPacket(uint8_t txBuffer[43])
 {
-     WriteDataButton() ;
+    WriteDataButton();
     LatitudeBinary = ((_gps.location.lat() + 90) / 180.0) * 16777215;
     LongitudeBinary = ((_gps.location.lng() + 180) / 360.0) * 16777215;
     altitudeGps = _gps.altitude.meters();
@@ -269,6 +273,7 @@ void buildPacket(uint8_t txBuffer[30])
     Serial.println(BatPercentage);
     Serial.print("statu: ");
     Serial.println(Status);
+    Queue1 = readFile(LittleFS, Button_Data);
 
     if (!Queue.empty())
     {
@@ -303,73 +308,225 @@ void buildPacket(uint8_t txBuffer[30])
         uint32_t Tb = ((hr * 3600) + (Mi * 60) + Sec);
         uint8_t BPB = (BPc / 100.0) * 255.0;
 
-        txBuffer[0] = (LatitudeBinary >> 16) & 0xFF;
-        txBuffer[1] = (LatitudeBinary >> 8) & 0xFF;
-        txBuffer[2] = LatitudeBinary & 0xFF;
-        txBuffer[3] = (LongitudeBinary >> 16) & 0xFF;
-        txBuffer[4] = (LongitudeBinary >> 8) & 0xFF;
-        txBuffer[5] = LongitudeBinary & 0xFF;
-        txBuffer[6] = (altitudeGps >> 8) & 0xFF;
-        txBuffer[7] = altitudeGps & 0xFF;
-        txBuffer[8] = hdopGps & 0xFF;
-        txBuffer[9] = sats & 0xFF;
-        txBuffer[10] = (timebinary >> 16) & 0xFF;
-        txBuffer[11] = (timebinary >> 8) & 0xFF;
-        txBuffer[12] = timebinary & 0xFF;
-        txBuffer[13] = BatPercentage & 0xFF;
-        txBuffer[14] = Status & 0xFF;
-        txBuffer[15] = (LatB >> 16) & 0xFF;
-        txBuffer[16] = (LatB >> 8) & 0xFF;
-        txBuffer[17] = LatB & 0xFF;
-        txBuffer[18] = (LongB >> 16) & 0xFF;
-        txBuffer[19] = (LongB >> 8) & 0xFF;
-        txBuffer[20] = LongB & 0xFF;
-        txBuffer[21] = (altt >> 8) & 0xFF;
-        txBuffer[22] = altt & 0xFF;
-        txBuffer[23] = hdp & 0xFF;
-        txBuffer[24] = sta & 0xFF;
-        txBuffer[25] = (Tb >> 16) & 0xFF;
-        txBuffer[26] = (Tb >> 8) & 0xFF;
-        txBuffer[27] = Tb & 0xFF;
-        txBuffer[28] = BPB & 0xFF;
-        txBuffer[29] = Bs & 0xFF;
-        if (LMIC.txrxFlags & TXRX_ACK)
+        if (!Queue1.empty())
         {
-            Queue.pop();
+            String data1 = Queue1.front();
+            Serial.println("Buttons data are : ");
+            Serial.println(data1);
+            const char *cc = data1.c_str();
+            std::istringstream iss(cc);
+            std::vector<std ::string> DATA{std::istream_iterator<std::string>{iss}, std::istream_iterator<std::string>{}};
+            uint8_t buttonNum = std::stoi(DATA[0]);
+            uint32_t TimeButton = std::stoi(DATA[1]);
+            uint32_t LatitudeButton = std::stoi(DATA[2]);
+            uint32_t LongitudeButton = std::stoi(DATA[3]);
+            uint16_t AltitudeButton = std::stoi(DATA[4]);
+            uint8_t buttonPress = std::stoi(DATA[5]);
+
+            txBuffer[0] = (LatitudeBinary >> 16) & 0xFF;
+            txBuffer[1] = (LatitudeBinary >> 8) & 0xFF;
+            txBuffer[2] = LatitudeBinary & 0xFF;
+            txBuffer[3] = (LongitudeBinary >> 16) & 0xFF;
+            txBuffer[4] = (LongitudeBinary >> 8) & 0xFF;
+            txBuffer[5] = LongitudeBinary & 0xFF;
+            txBuffer[6] = (altitudeGps >> 8) & 0xFF;
+            txBuffer[7] = altitudeGps & 0xFF;
+            txBuffer[8] = hdopGps & 0xFF;
+            txBuffer[9] = sats & 0xFF;
+            txBuffer[10] = (timebinary >> 16) & 0xFF;
+            txBuffer[11] = (timebinary >> 8) & 0xFF;
+            txBuffer[12] = timebinary & 0xFF;
+            txBuffer[13] = BatPercentage & 0xFF;
+            txBuffer[14] = Status & 0xFF;
+            txBuffer[15] = (LatB >> 16) & 0xFF;
+            txBuffer[16] = (LatB >> 8) & 0xFF;
+            txBuffer[17] = LatB & 0xFF;
+            txBuffer[18] = (LongB >> 16) & 0xFF;
+            txBuffer[19] = (LongB >> 8) & 0xFF;
+            txBuffer[20] = LongB & 0xFF;
+            txBuffer[21] = (altt >> 8) & 0xFF;
+            txBuffer[22] = altt & 0xFF;
+            txBuffer[23] = hdp & 0xFF;
+            txBuffer[24] = sta & 0xFF;
+            txBuffer[25] = (Tb >> 16) & 0xFF;
+            txBuffer[26] = (Tb >> 8) & 0xFF;
+            txBuffer[27] = Tb & 0xFF;
+            txBuffer[28] = BPB & 0xFF;
+            txBuffer[29] = Bs & 0xFF;
+            txBuffer[30] = buttonNum & 0xFF;
+            txBuffer[31] = (TimeButton >> 16) & 0xFF;
+            txBuffer[32] = (TimeButton >> 8) & 0xFF;
+            txBuffer[33] = TimeButton & 0xFF;
+            txBuffer[34] = (LatitudeButton >> 16) & 0xFF;
+            txBuffer[35] = (LatitudeButton >> 8) & 0xFF;
+            txBuffer[36] = LatitudeButton & 0xFF;
+            txBuffer[37] = (LongitudeButton >> 16) & 0xFF;
+            txBuffer[38] = (LongitudeButton >> 8) & 0xFF;
+            txBuffer[39] = LongitudeButton & 0xFF;
+            txBuffer[40] = (AltitudeButton >> 8) & 0xFF;
+            txBuffer[41] = AltitudeButton & 0xFF;
+            txBuffer[42] = buttonPress & 0xFF;
+
+            if (LMIC.txrxFlags & TXRX_ACK)
+            {
+                Queue.pop();
+                Queue1.pop();
+            }
+        }
+        else
+        {
+            txBuffer[0] = (LatitudeBinary >> 16) & 0xFF;
+            txBuffer[1] = (LatitudeBinary >> 8) & 0xFF;
+            txBuffer[2] = LatitudeBinary & 0xFF;
+            txBuffer[3] = (LongitudeBinary >> 16) & 0xFF;
+            txBuffer[4] = (LongitudeBinary >> 8) & 0xFF;
+            txBuffer[5] = LongitudeBinary & 0xFF;
+            txBuffer[6] = (altitudeGps >> 8) & 0xFF;
+            txBuffer[7] = altitudeGps & 0xFF;
+            txBuffer[8] = hdopGps & 0xFF;
+            txBuffer[9] = sats & 0xFF;
+            txBuffer[10] = (timebinary >> 16) & 0xFF;
+            txBuffer[11] = (timebinary >> 8) & 0xFF;
+            txBuffer[12] = timebinary & 0xFF;
+            txBuffer[13] = BatPercentage & 0xFF;
+            txBuffer[14] = Status & 0xFF;
+            txBuffer[15] = (LatB >> 16) & 0xFF;
+            txBuffer[16] = (LatB >> 8) & 0xFF;
+            txBuffer[17] = LatB & 0xFF;
+            txBuffer[18] = (LongB >> 16) & 0xFF;
+            txBuffer[19] = (LongB >> 8) & 0xFF;
+            txBuffer[20] = LongB & 0xFF;
+            txBuffer[21] = (altt >> 8) & 0xFF;
+            txBuffer[22] = altt & 0xFF;
+            txBuffer[23] = hdp & 0xFF;
+            txBuffer[24] = sta & 0xFF;
+            txBuffer[25] = (Tb >> 16) & 0xFF;
+            txBuffer[26] = (Tb >> 8) & 0xFF;
+            txBuffer[27] = Tb & 0xFF;
+            txBuffer[28] = BPB & 0xFF;
+            txBuffer[29] = Bs & 0xFF;
+            txBuffer[30] = 0;
+            txBuffer[31] = 0;
+            txBuffer[32] = 0;
+            txBuffer[33] = 0;
+            txBuffer[34] = 0;
+            txBuffer[35] = 0;
+            txBuffer[36] = 0;
+            txBuffer[37] = 0;
+            txBuffer[38] = 0;
+            txBuffer[39] = 0;
+            txBuffer[40] = 0;
+            txBuffer[41] = 0;
+            txBuffer[42] = 0;
         }
     }
     else
     {
-        txBuffer[0] = (LatitudeBinary >> 16) & 0xFF;
-        txBuffer[1] = (LatitudeBinary >> 8) & 0xFF;
-        txBuffer[2] = LatitudeBinary & 0xFF;
-        txBuffer[3] = (LongitudeBinary >> 16) & 0xFF;
-        txBuffer[4] = (LongitudeBinary >> 8) & 0xFF;
-        txBuffer[5] = LongitudeBinary & 0xFF;
-        txBuffer[6] = (altitudeGps >> 8) & 0xFF;
-        txBuffer[7] = altitudeGps & 0xFF;
-        txBuffer[8] = hdopGps & 0xFF;
-        txBuffer[9] = sats & 0xFF;
-        txBuffer[10] = (timebinary >> 16) & 0xFF;
-        txBuffer[11] = (timebinary >> 8) & 0xFF;
-        txBuffer[12] = timebinary & 0xFF;
-        txBuffer[13] = BatPercentage & 0xFF;
-        txBuffer[14] = Status & 0xFF;
-        txBuffer[15] = 0;
-        txBuffer[16] = 0;
-        txBuffer[17] = 0;
-        txBuffer[18] = 0;
-        txBuffer[19] = 0;
-        txBuffer[20] = 0;
-        txBuffer[21] = 0;
-        txBuffer[22] = 0;
-        txBuffer[23] = 0;
-        txBuffer[24] = 0;
-        txBuffer[25] = 0;
-        txBuffer[26] = 0;
-        txBuffer[27] = 0;
-        txBuffer[28] = 0;
-        txBuffer[29] = 0;
+        if (!Queue1.empty())
+        {
+            String data1 = Queue1.front();
+            Serial.println("Buttons data are : ");
+            Serial.println(data1);
+            const char *cc = data1.c_str();
+            std::istringstream iss(cc);
+            std::vector<std ::string> DATA{std::istream_iterator<std::string>{iss}, std::istream_iterator<std::string>{}};
+            uint8_t buttonNum = std::stoi(DATA[0]);
+            uint32_t TimeButton = std::stoi(DATA[1]);
+            uint32_t LatitudeButton = std::stoi(DATA[2]);
+            uint32_t LongitudeButton = std::stoi(DATA[3]);
+            uint16_t AltitudeButton = std::stoi(DATA[4]);
+            uint8_t buttonPress = std::stoi(DATA[5]);
+
+            txBuffer[0] = (LatitudeBinary >> 16) & 0xFF;
+            txBuffer[1] = (LatitudeBinary >> 8) & 0xFF;
+            txBuffer[2] = LatitudeBinary & 0xFF;
+            txBuffer[3] = (LongitudeBinary >> 16) & 0xFF;
+            txBuffer[4] = (LongitudeBinary >> 8) & 0xFF;
+            txBuffer[5] = LongitudeBinary & 0xFF;
+            txBuffer[6] = (altitudeGps >> 8) & 0xFF;
+            txBuffer[7] = altitudeGps & 0xFF;
+            txBuffer[8] = hdopGps & 0xFF;
+            txBuffer[9] = sats & 0xFF;
+            txBuffer[10] = (timebinary >> 16) & 0xFF;
+            txBuffer[11] = (timebinary >> 8) & 0xFF;
+            txBuffer[12] = timebinary & 0xFF;
+            txBuffer[13] = BatPercentage & 0xFF;
+            txBuffer[14] = Status & 0xFF;
+            txBuffer[15] = 0;
+            txBuffer[16] = 0;
+            txBuffer[17] = 0;
+            txBuffer[18] = 0;
+            txBuffer[19] = 0;
+            txBuffer[20] = 0;
+            txBuffer[21] = 0;
+            txBuffer[22] = 0;
+            txBuffer[23] = 0;
+            txBuffer[24] = 0;
+            txBuffer[25] = 0;
+            txBuffer[26] = 0;
+            txBuffer[27] = 0;
+            txBuffer[28] = 0;
+            txBuffer[29] = 0;
+            txBuffer[30] = buttonNum & 0xFF;
+            txBuffer[31] = (TimeButton >> 16) & 0xFF;
+            txBuffer[32] = (TimeButton >> 8) & 0xFF;
+            txBuffer[33] = TimeButton & 0xFF;
+            txBuffer[34] = (LatitudeButton >> 16) & 0xFF;
+            txBuffer[35] = (LatitudeButton >> 8) & 0xFF;
+            txBuffer[36] = LatitudeButton & 0xFF;
+            txBuffer[37] = (LongitudeButton >> 16) & 0xFF;
+            txBuffer[38] = (LongitudeButton >> 8) & 0xFF;
+            txBuffer[39] = LongitudeButton & 0xFF;
+            txBuffer[40] = (AltitudeButton >> 8) & 0xFF;
+            txBuffer[41] = AltitudeButton & 0xFF;
+            txBuffer[42] = buttonPress & 0xFF;
+
+        }
+        else
+        {
+            txBuffer[0] = (LatitudeBinary >> 16) & 0xFF;
+            txBuffer[1] = (LatitudeBinary >> 8) & 0xFF;
+            txBuffer[2] = LatitudeBinary & 0xFF;
+            txBuffer[3] = (LongitudeBinary >> 16) & 0xFF;
+            txBuffer[4] = (LongitudeBinary >> 8) & 0xFF;
+            txBuffer[5] = LongitudeBinary & 0xFF;
+            txBuffer[6] = (altitudeGps >> 8) & 0xFF;
+            txBuffer[7] = altitudeGps & 0xFF;
+            txBuffer[8] = hdopGps & 0xFF;
+            txBuffer[9] = sats & 0xFF;
+            txBuffer[10] = (timebinary >> 16) & 0xFF;
+            txBuffer[11] = (timebinary >> 8) & 0xFF;
+            txBuffer[12] = timebinary & 0xFF;
+            txBuffer[13] = BatPercentage & 0xFF;
+            txBuffer[14] = Status & 0xFF;
+            txBuffer[15] = 0;
+            txBuffer[16] = 0;
+            txBuffer[17] = 0;
+            txBuffer[18] = 0;
+            txBuffer[19] = 0;
+            txBuffer[20] = 0;
+            txBuffer[21] = 0;
+            txBuffer[22] = 0;
+            txBuffer[23] = 0;
+            txBuffer[24] = 0;
+            txBuffer[25] = 0;
+            txBuffer[26] = 0;
+            txBuffer[27] = 0;
+            txBuffer[28] = 0;
+            txBuffer[30] = 0;
+            txBuffer[31] = 0;
+            txBuffer[32] = 0;
+            txBuffer[33] = 0;
+            txBuffer[34] = 0;
+            txBuffer[35] = 0;
+            txBuffer[36] = 0;
+            txBuffer[37] = 0;
+            txBuffer[38] = 0;
+            txBuffer[39] = 0;
+            txBuffer[40] = 0;
+            txBuffer[41] = 0;
+            txBuffer[42] = 0;
+        }
     }
 }
 
