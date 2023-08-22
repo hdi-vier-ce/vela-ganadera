@@ -273,7 +273,12 @@ void buildPacket(uint8_t txBuffer[43])
     Serial.println(BatPercentage);
     Serial.print("statu: ");
     Serial.println(Status);
-    Queue1 = readFile(LittleFS, Button_Data);
+    if (Queue1.empty())
+    {
+         Queue1 = readFile(LittleFS, Button_Data);
+    }
+    
+   
 
     if (!Queue.empty())
     {
@@ -418,6 +423,10 @@ void buildPacket(uint8_t txBuffer[43])
             txBuffer[40] = 0;
             txBuffer[41] = 0;
             txBuffer[42] = 0;
+            if (LMIC.txrxFlags & TXRX_ACK)
+            {
+                Queue.pop();
+            }
         }
     }
     else
@@ -480,6 +489,10 @@ void buildPacket(uint8_t txBuffer[43])
             txBuffer[40] = (AltitudeButton >> 8) & 0xFF;
             txBuffer[41] = AltitudeButton & 0xFF;
             txBuffer[42] = buttonPress & 0xFF;
+            if (LMIC.txrxFlags & TXRX_ACK)
+            {
+                Queue1.pop();
+            }
 
         }
         else
