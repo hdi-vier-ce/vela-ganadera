@@ -115,8 +115,8 @@ void ReadData()
 
 void Buttonsetup()
 {
-    pinMode(BUTTON_1_PIN, INPUT_PULLUP); // Set the button pin as input with internal pull-up resistor
-    pinMode(BUTTON_2_PIN, INPUT_PULLUP);
+    pinMode(BUTTON_1_PIN, INPUT_PULLDOWN); // Set the button pin as input with internal pull-up resistor
+    pinMode(BUTTON_2_PIN, INPUT_PULLDOWN);
     attachInterrupt(digitalPinToInterrupt(BUTTON_2_PIN), button2Interrupt, CHANGE); // Attach interrupt to the button pin
     attachInterrupt(digitalPinToInterrupt(BUTTON_1_PIN), button1Interrupt, CHANGE);
 }
@@ -226,6 +226,15 @@ void WriteDataButton()
         DataButton2.pop();
     }
 }
+uint8_t Positons(uint8_t RelativePosition, uint8_t ButtonOrder)
+{
+    return (30 + RelativePosition + (ButtonOrder * 12));
+}
+
+uint32_t count = 0;
+uint8_t size;
+String data1;
+std::vector<std::string> DATA;
 #if defined(PAYLOAD_USE_FULL)
 
 // More data than PAYLOAD_USE_CAYENNE
@@ -275,10 +284,8 @@ void buildPacket(uint8_t txBuffer[43])
     Serial.println(Status);
     if (Queue1.empty())
     {
-         Queue1 = readFile(LittleFS, Button_Data);
+        Queue1 = readFile(LittleFS, Button_Data);
     }
-    
-   
 
     if (!Queue.empty())
     {
@@ -315,7 +322,33 @@ void buildPacket(uint8_t txBuffer[43])
 
         if (!Queue1.empty())
         {
-            String data1 = Queue1.front();
+            if (Queue1.size() >= 4)
+            {
+                while (count != 5)
+                {
+                    size = 4;
+                    String dataButton = Queue1.front();
+                    const char *cc = dataButton.c_str();
+                    DATA.assign(4, cc);
+                    Queue1.pop();
+                    count++;
+                }
+                count = 0;
+            }
+            else if (Queue1.size() < 4)
+            {
+                while (count != Queue1.size() + 1)
+                {
+                    size = Queue1.size();
+                    String dataButton = Queue1.front();
+                    const char *cc = dataButton.c_str();
+                    DATA.assign(size, cc);
+                    Queue1.pop();
+                    count++;
+                }
+                count = 0;
+            }
+
             Serial.println("Buttons data are : ");
             Serial.println(data1);
             const char *cc = data1.c_str();
@@ -358,19 +391,35 @@ void buildPacket(uint8_t txBuffer[43])
             txBuffer[27] = Tb & 0xFF;
             txBuffer[28] = BPB & 0xFF;
             txBuffer[29] = Bs & 0xFF;
-            txBuffer[30] = buttonNum & 0xFF;
-            txBuffer[31] = (TimeButton >> 16) & 0xFF;
-            txBuffer[32] = (TimeButton >> 8) & 0xFF;
-            txBuffer[33] = TimeButton & 0xFF;
-            txBuffer[34] = (LatitudeButton >> 16) & 0xFF;
-            txBuffer[35] = (LatitudeButton >> 8) & 0xFF;
-            txBuffer[36] = LatitudeButton & 0xFF;
-            txBuffer[37] = (LongitudeButton >> 16) & 0xFF;
-            txBuffer[38] = (LongitudeButton >> 8) & 0xFF;
-            txBuffer[39] = LongitudeButton & 0xFF;
-            txBuffer[40] = (AltitudeButton >> 8) & 0xFF;
-            txBuffer[41] = AltitudeButton & 0xFF;
-            txBuffer[42] = buttonPress & 0xFF;
+            txBuffer[30] = size & 0xFF;
+
+            for (size_t i = 0; i < size - 1; i++)
+            {
+
+                /**
+                std::istringstream iss(cc);
+               std::vector<std ::string> DATA{std::istream_iterator<std::string>{iss}, std::istream_iterator<std::string>{}};
+                uint8_t buttonNum = std::stoi(DATA[i][0]);
+                uint32_t TimeButton = std::stoi(DATA[i][1]);
+                uint32_t LatitudeButton = std::stoi(DATA[i][2]);
+                uint32_t LongitudeButton = std::stoi(DATA[i][3]);
+                uint16_t AltitudeButton = std::stoi(DATA[i][4]);
+                uint8_t buttonPress = std::stoi(DATA[i][5]);**/
+
+                txBuffer[Positons(1, i)] = buttonNum & 0xFF;
+                txBuffer[Positons(2, i)] = (TimeButton >> 16) & 0xFF;
+                txBuffer[Positons(3, i)] = (TimeButton >> 8) & 0xFF;
+                txBuffer[Positons(4, i)] = TimeButton & 0xFF;
+                txBuffer[Positons(5, i)] = (LatitudeButton >> 16) & 0xFF;
+                txBuffer[Positons(6, i)] = (LatitudeButton >> 8) & 0xFF;
+                txBuffer[Positons(7, i)] = LatitudeButton & 0xFF;
+                txBuffer[Positons(8, i)] = (LongitudeButton >> 16) & 0xFF;
+                txBuffer[Positons(9, i)] = (LongitudeButton >> 8) & 0xFF;
+                txBuffer[Positons(10, i)] = LongitudeButton & 0xFF;
+                txBuffer[Positons(11, i)] = (AltitudeButton >> 8) & 0xFF;
+                txBuffer[Positons(12, i)] = AltitudeButton & 0xFF;
+                txBuffer[Positons(13, i)] = buttonPress & 0xFF;
+            }
 
             if (LMIC.txrxFlags & TXRX_ACK)
             {
@@ -493,7 +542,6 @@ void buildPacket(uint8_t txBuffer[43])
             {
                 Queue1.pop();
             }
-
         }
         else
         {
