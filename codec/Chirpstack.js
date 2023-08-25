@@ -208,10 +208,16 @@ function readButtonBytes(input, position) {
 function decodeButtonsData(dataButtons) {
   const latitudeButton = (dataButtons.latButton / 16777215) * 180 - 90;
   const lonButton = (dataButtons.longButton / 16777215) * 360 - 180;
+  const timeHrsButton = Math.floor(dataButtons.timeButton / 3600);
+  const timeMinButton = Math.floor((dataButtons.timeButton % 3600) / 60);
+  const timeSecButton = Math.floor(dataButtons.timeButton % 60);
+  
 
   return {
     buttonNum: dataButtons.buttonNum,
-    timeButton: dataButtons.timeButton,
+    timeHrsButton,
+    timeMinButton, 
+    timeSecButton,
     latitudeButton,
     lonButton,
   };
@@ -223,7 +229,7 @@ function buttonsData(input) {
     case 1: {
       const button1Bytes = readButtonBytes(input, 30);
       const button1 = decodeButtonsData(button1Bytes); 
-      return { button1 };
+      return { button1Bytes, button1 };
     }
 
     case 2: {
@@ -231,7 +237,7 @@ function buttonsData(input) {
       const button2Bytes = readButtonBytes(input, 40);
       const button1 = decodeButtonsData(button1Bytes);
       const button2 = decodeButtonsData(button2Bytes);
-      return { button1, button2 };
+      return { button1Bytes , button2Bytes , button1, button2 };
     }
 
     case 3: {

@@ -216,7 +216,7 @@ void WriteDataButton()
 }
 uint8_t Positons(uint8_t RelativePosition, uint8_t ButtonOrder)
 {
-    return (30 + RelativePosition + (ButtonOrder * 12));
+    return (30 + RelativePosition + (ButtonOrder * 10));
 }
 
 uint8_t size;
@@ -372,7 +372,7 @@ void buildPacket(uint8_t txBuffer[71])
             txBuffer[29] = Bs & 0xFF;
             txBuffer[30] = size & 0xFF;
 
-            for (size_t i = 0; i < size - 1; i++)
+            for (size_t i = 0; i < size ; i++)
             {
                 if (!DATA.empty())
                 {
@@ -395,8 +395,8 @@ void buildPacket(uint8_t txBuffer[71])
                     txBuffer[Positons(6, i)] = (LatitudeButton >> 8) & 0xFF;
                     txBuffer[Positons(7, i)] = LatitudeButton & 0xFF;
                     txBuffer[Positons(8, i)] = (LongitudeButton >> 16) & 0xFF;
-                    txBuffer[Positons(9, i)] = (LongitudeButton >> 8) & 0xFF;
-                    txBuffer[Positons(10, i)] = LongitudeButton & 0xFF;
+                    txBuffer[Positons(9, i)] = (LongitudeButton >> 8) ;
+                    txBuffer[Positons(10, i)] = LongitudeButton & 0xFF ;
                     DATA.erase(DATA.begin());
                 }
             }
@@ -438,7 +438,7 @@ void buildPacket(uint8_t txBuffer[71])
             txBuffer[27] = Tb & 0xFF;
             txBuffer[28] = BPB & 0xFF;
             txBuffer[29] = Bs & 0xFF;
-            for (size_t i = 15; i < 71; i++)
+            for (size_t i = 30; i < 71; i++)
             {
                 txBuffer[i] = 0;
             }
@@ -508,7 +508,7 @@ void buildPacket(uint8_t txBuffer[71])
 
             txBuffer[30] = size & 0xFF;
 
-            for (size_t i = 0; i < size - 1; i++)
+            for (size_t i = 0; i < size ; i++)
             {
                 if (!DATA.empty())
                 {
