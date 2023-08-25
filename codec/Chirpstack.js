@@ -115,7 +115,7 @@ function decodeDataBytes(input) {
     longitude,
     altitude,
     hdop,
-    stats,                                 
+    stats,
     timeHrs,
     timeMin,
     timeSec,
@@ -178,20 +178,26 @@ function checkMissing(dataMissing) {
     dataMissing.longMissingBytes == 0 &&
     dataMissing.altMissing == 0 &&
     dataMissing.hdopMissingBytes == 0 &&
-    dataMissing.statMissingBytes == 0 && 
+    dataMissing.statMissingBytes == 0 &&
     dataMissing.timeMissingBytes == 0 &&
     dataMissing.batMissingBytes == 0 &&
     dataMissing.batteryStatusMissingBytes == 0
   );
 }
-function readBytes(input , position) {
-  const buttonNum = input.bytes[position+1];
+function readBytes(input, position) {
+  const buttonNum = input.bytes[position + 1];
   const timeButton =
-    (input.bytes[position+2] << 16) | (input.bytes[position+3] << 8) | input.bytes[position+4];
+    (input.bytes[position + 2] << 16) |
+    (input.bytes[position + 3] << 8) |
+    input.bytes[position + 4];
   const latButton =
-    (input.bytes[position+5] << 16) | (input.bytes[position+6] << 8) | input.bytes[position+7];
+    (input.bytes[position + 5] << 16) |
+    (input.bytes[position + 6] << 8) |
+    input.bytes[position + 7];
   const longButton =
-    (input.bytes[position+8] << 16) | (input.bytes[position+9] << 8) | input.bytes[position+10];
+    (input.bytes[position + 8] << 16) |
+    (input.bytes[position + 9] << 8) |
+    input.bytes[position + 10];
 
   return {
     buttonNum,
@@ -204,32 +210,35 @@ function readBytes(input , position) {
 function decodeButtonsBytes(input) {
   const numOfButton = input.bytes[30];
   switch (numOfButton) {
-    case 1:
-      const button1 = readBytes(input , 30);
-      return{button1};
-      break;
-    case 2:
-      const button1 = readBytes(input , 30);
-      const button2 = readBytes(input , 40);
-      return{button1 , button2} ;
-      break;
-    case 3:
-      const button1 = readBytes(input , 30);
-      const button2 = readBytes(input , 40);
-      const button3 = readBytes(input , 50); 
-      return{button1 , button2 , button3} ;
-      break;
-    case 4:
-      const button1 = readBytes(input , 30);
-      const button2 = readBytes(input , 40);
-      const button3 = readBytes(input , 50);
-      const button4 = readBytes(input , 60);
-      return{button1 , button2 , button3 , button4} ;
-      break;
+    case 1: {
+      const button1 = readBytes(input, 30);
+      return { button1 };
+    }
+
+    case 2: {
+      const button1 = readBytes(input, 30);
+      const button2 = readBytes(input, 40);
+      return { button1, button2 };
+    }
+
+    case 3: {
+      const button1 = readBytes(input, 30);
+      const button2 = readBytes(input, 40);
+      const button3 = readBytes(input, 50);
+      return { button1, button2, button3 };
+    }
+
+    case 4: {
+      const button1 = readBytes(input, 30);
+      const button2 = readBytes(input, 40);
+      const button3 = readBytes(input, 50);
+      const button4 = readBytes(input, 60);
+      return { button1, button2, button3, button4 };
+    }
+
     default:
       break;
   }
- 
 }
 
 function decodeButtonsData(dataButtons) {
