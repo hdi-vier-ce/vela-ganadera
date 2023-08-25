@@ -10,13 +10,11 @@
 function decodeUplink(input) {
   const data = decodeDataBytes(input);
   const dataMissing = decodeMissingBytes(input);
-  const dataButtons = decodeButtonsBytes(input);
-  if (!checkMissing(dataMissing) && !checkButtons(dataButtons)) {
-    //MissingData ="No missing Data" ;
+  if (!checkMissing(dataMissing) && !checkButtons(input)) {
     return {
       data,
     };
-  } else if (!checkButtons(dataButtons)) {
+  } else if (!checkButtons(input)) {
     const missingData = decodeMissingData(dataMissing);
     return {
       data: {
@@ -34,7 +32,7 @@ function decodeUplink(input) {
       },
     };
   } else if (!checkMissing(dataMissing)) {
-    const buttonData = decodeButtonsData(dataButtons);
+    const buttonData = buttonsData(input);
     return {
       data: {
         latitude: data.altitude,
@@ -52,7 +50,7 @@ function decodeUplink(input) {
     };
   } else {
     const missingData = decodeMissingData(dataMissing);
-    const buttonData = decodeButtonsData(dataButtons);
+    const buttonData = buttonsData(input);
     return {
       data: {
         latitude: data.altitude,
@@ -207,40 +205,6 @@ function readBytes(input, position) {
   };
 }
 
-function decodeButtonsBytes(input) {
-  const numOfButton = input.bytes[30];
-  switch (numOfButton) {
-    case 1: {
-      const button1 = readBytes(input, 30);
-      return { button1 };
-    }
-
-    case 2: {
-      const button1 = readBytes(input, 30);
-      const button2 = readBytes(input, 40);
-      return { button1, button2 };
-    }
-
-    case 3: {
-      const button1 = readBytes(input, 30);
-      const button2 = readBytes(input, 40);
-      const button3 = readBytes(input, 50);
-      return { button1, button2, button3 };
-    }
-
-    case 4: {
-      const button1 = readBytes(input, 30);
-      const button2 = readBytes(input, 40);
-      const button3 = readBytes(input, 50);
-      const button4 = readBytes(input, 60);
-      return { button1, button2, button3, button4 };
-    }
-
-    default:
-      break;
-  }
-}
-
 function decodeButtonsData(dataButtons) {
   const latitudeButton = (dataButtons.latButton / 16777215) * 180 - 90;
   const lonButton = (dataButtons.longButton / 16777215) * 360 - 180;
@@ -253,13 +217,54 @@ function decodeButtonsData(dataButtons) {
   };
 }
 
-function checkButtons(dataButtons) {
+function buttonsData(input) {
+  const numOfButton = input.bytes[30];
+  switch (numOfButton) {
+    case 1: {
+      const button1Bytes = readBytes(input, 30);
+      const button1 = decodeButtonsData(button1Bytes); 
+      return { button1 };
+    }
+
+    case 2: {
+      const button1Bytes = readBytes(input, 30);
+      const button2Bytes = readBytes(input, 40);
+      const button1 = decodeButtonsData(button1Bytes);
+      const button2 = decodeButtonsData(button2Bytes);
+      return { button1, button2 };
+    }
+
+    case 3: {
+      const button1Bytes = readBytes(input, 30);
+      const button2Bytes = readBytes(input, 40);
+      const button3Bytes = readBytes(input, 50);
+      const button1 = decodeButtonsData(button1Bytes);
+      const button2 = decodeButtonsData(button2Bytes);
+      const button3 = decodeButtonsData(button3Bytes);
+      return { button1, button2, button3 };
+    }
+
+    case 4: {
+      const button1Bytes = readBytes(input, 30);
+      const button2Bytes = readBytes(input, 40);
+      const button3Bytes = readBytes(input, 50);
+      const button4Bytes = readBytes(input, 60);
+      const button1 = decodeButtonsData(button1Bytes);
+      const button2 = decodeButtonsData(button2Bytes);
+      const button3 = decodeButtonsData(button3Bytes);
+      const button4 = decodeButtonsData(button4Bytes);
+      return { button1, button2, button3, button4 };
+    }
+
+    default:
+      break;
+  }
+}
+
+
+
+function checkButtons(input) {
   return !(
-    dataButtons.buttonNum == 0 &&
-    dataButtons.timeButton == 0 &&
-    dataButtons.latButton == 0 &&
-    dataButtons.longButton == 0 &&
-    dataButtons.altButton == 0 &&
-    dataButtons.buttonPressed == 0
+    input.bytes[30] == 0
   );
 }
