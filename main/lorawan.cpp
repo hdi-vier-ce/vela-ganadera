@@ -492,19 +492,17 @@ void lorawan_send(uint8_t *data, uint8_t data_size, uint8_t port, bool confirmed
         double Latdeg = ((lat / 16777215.0) * 180.0) - 90;
         uint32_t longg = (data[3] << 16) | (data[4] << 8) | data[5];
         double Longdeg = ((longg / 16777215.0) * 360.0) - 180;
-        uint16_t alt = (data[6] << 16) | (data[7] << 8);
-        uint8_t Hdop = data[8];
-        uint8_t stat = data[9];
-        uint32_t time = (data[10] << 16) | (data[11] << 8) | data[12];
+        uint8_t Hdop = data[6];
+        uint8_t stat = data[7];
+        uint32_t time = (data[8] << 16) | (data[9] << 8) | data[10];
         unsigned int Hour = time / 3600;
         unsigned int Min = (time % 3600) / 60;
         unsigned int Sec = time % 60;
-        unsigned int Bat = data[13];
+        unsigned int Bat = data[11];
         uint8_t BattP = static_cast<int>((Bat / 255.0) * 100);
-        uint8_t BattS = data[14];
+        uint8_t BattS = data[12];
         char LatdegS[16];
         char LongdegS[16];
-        char altS[16];
         char HdoopS[16];
         char statS[16];
         char HourS[16];
@@ -515,7 +513,6 @@ void lorawan_send(uint8_t *data, uint8_t data_size, uint8_t port, bool confirmed
 
         dtostrf(Latdeg, 8, 6, LatdegS);
         dtostrf(Longdeg, 8, 6, LongdegS);
-        itoa(alt, altS, 10);
         itoa(Hdop, HdoopS, 10);
         itoa(stat, statS, 10);
         itoa(Hour, HourS, 10);
@@ -524,7 +521,7 @@ void lorawan_send(uint8_t *data, uint8_t data_size, uint8_t port, bool confirmed
         itoa(BattP, BattPS, 10);
         itoa(BattS, BattSS, 10);
 
-        std::string FailData = std::string(LatdegS) + " " + std::string(LongdegS) + " " + std::string(altS) + " " + std::string(HdoopS) + " " + std::string(statS) + " " + std::string(HourS) + " " + std::string(MinS) + " " + std::string(SecS) + " " + std::string(BattPS) + " " + std::string(BattSS) + '\n';
+        std::string FailData = std::string(LatdegS) + " " + std::string(LongdegS) + " " + std::string(HdoopS) + " " + std::string(statS) + " " + std::string(HourS) + " " + std::string(MinS) + " " + std::string(SecS) + " " + std::string(BattPS) + " " + std::string(BattSS) + '\n';
         const char *dst = FailData.c_str();
 
         appendFile(LittleFS, FAILED_DATA_FILE, dst);

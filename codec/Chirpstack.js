@@ -20,7 +20,6 @@ function decodeUplink(input) {
       data: {
         latitude: data.altitude,
         longitude: data.longitude,
-        altitude: data.altitude,
         hdop: data.hdop,
         stats: data.stats,
         timeHrs: data.timeHrs,
@@ -37,7 +36,6 @@ function decodeUplink(input) {
       data: {
         latitude: data.altitude,
         longitude: data.longitude,
-        altitude: data.altitude,
         hdop: data.hdop,
         stats: data.stats,
         timeHrs: data.timeHrs,
@@ -55,7 +53,6 @@ function decodeUplink(input) {
       data: {
         latitude: data.altitude,
         longitude: data.longitude,
-        altitude: data.altitude,
         hdop: data.hdop,
         stats: data.stats,
         timeHrs: data.timeHrs,
@@ -90,28 +87,26 @@ function decodeDataBytes(input) {
     (input.bytes[3] << 16) | (input.bytes[4] << 8) | input.bytes[5];
   const longitude = (longitudeBytes / 16777215) * 360 - 180;
   // Convert Altitude Bytes to M
-  const altitude = (input.bytes[6] << 8) | input.bytes[7];
   //Convert HdopGPS
-  const hdop = input.bytes[8] / 10;
+  const hdop = input.bytes[6] / 10;
   //Convert Stats
-  const stats = input.bytes[9];
+  const stats = input.bytes[7];
   //Convert Time
   const timeBytes =
-    (input.bytes[10] << 16) | (input.bytes[11] << 8) | input.bytes[12];
+    (input.bytes[8] << 16) | (input.bytes[9] << 8) | input.bytes[10];
   const timeHrs = Math.floor(timeBytes / 3600);
   const timeMin = Math.floor((timeBytes % 3600) / 60);
   const timeSec = Math.floor(timeBytes % 60);
   //Convert Battery pourcentage
-  const batteryBytes = input.bytes[13];
+  const batteryBytes = input.bytes[11];
   const batteryPercentage = Math.floor((batteryBytes / 255) * 100) + "%";
   //battery status
-  const batteryStatusBytes = input.bytes[14];
+  const batteryStatusBytes = input.bytes[12];
   const batStatus = batteryStatusBytes == 1 ? "Charging" : "Not Charging";
 
   return {
     latitude,
     longitude,
-    altitude,
     hdop,
     stats,
     timeHrs,
@@ -124,20 +119,18 @@ function decodeDataBytes(input) {
 
 function decodeMissingBytes(input) {
   const latMissingBytes =
-    (input.bytes[15] << 16) | (input.bytes[16] << 8) | input.bytes[17];
+    (input.bytes[13] << 16) | (input.bytes[14] << 8) | input.bytes[15];
   const longMissingBytes =
-    (input.bytes[18] << 16) | (input.bytes[19] << 8) | input.bytes[20];
-  const altMissing = (input.bytes[21] << 8) | input.bytes[22];
-  const hdopMissingBytes = input.bytes[23];
-  const statMissingBytes = input.bytes[24];
+    (input.bytes[16] << 16) | (input.bytes[17] << 8) | input.bytes[18];
+  const hdopMissingBytes = input.bytes[19];
+  const statMissingBytes = input.bytes[20];
   const timeMissingBytes =
-    (input.bytes[25] << 16) | (input.bytes[26] << 8) | input.bytes[27];
-  const batMissingBytes = input.bytes[28];
-  const batteryStatusMissingBytes = input.bytes[29];
+    (input.bytes[21] << 16) | (input.bytes[22] << 8) | input.bytes[23];
+  const batMissingBytes = input.bytes[24];
+  const batteryStatusMissingBytes = input.bytes[25];
   return {
     latMissingBytes,
     longMissingBytes,
-    altMissing,
     hdopMissingBytes,
     statMissingBytes,
     timeMissingBytes,
@@ -159,7 +152,6 @@ function decodeMissingData(dataMissing) {
   return {
     latMissing,
     longMissing,
-    altMissing: dataMissing.altMissing,
     hdpMissing,
     statMissingBytes,
     timeHrsMissing,
@@ -174,7 +166,6 @@ function checkMissing(dataMissing) {
   return !(
     dataMissing.latMissingBytes == 0 &&
     dataMissing.longMissingBytes == 0 &&
-    dataMissing.altMissing == 0 &&
     dataMissing.hdopMissingBytes == 0 &&
     dataMissing.statMissingBytes == 0 &&
     dataMissing.timeMissingBytes == 0 &&
@@ -187,15 +178,15 @@ function readButtonBytes(input, position) {
   const timeButton =
     (input.bytes[position + 2] << 16) |
     (input.bytes[position + 3] << 8) |
-    input.bytes[position + 4];
+     input.bytes[position + 4];
   const latButton =
     (input.bytes[position + 5] << 16) |
     (input.bytes[position + 6] << 8) |
-    input.bytes[position + 7];
+     input.bytes[position + 7];
   const longButton =
     (input.bytes[position + 8] << 16) |
     (input.bytes[position + 9] << 8) |
-    input.bytes[position + 10];
+     input.bytes[position + 10];
 
   return {
     buttonNum,
@@ -248,18 +239,6 @@ function buttonsData(input) {
       const button2 = decodeButtonsData(button2Bytes);
       const button3 = decodeButtonsData(button3Bytes);
       return { button1, button2, button3 };
-    }
-
-    case 4: {
-      const button1Bytes = readButtonBytes(input, 30);
-      const button2Bytes = readButtonBytes(input, 40);
-      const button3Bytes = readButtonBytes(input, 50);
-      const button4Bytes = readButtonBytes(input, 60);
-      const button1 = decodeButtonsData(button1Bytes);
-      const button2 = decodeButtonsData(button2Bytes);
-      const button3 = decodeButtonsData(button3Bytes);
-      const button4 = decodeButtonsData(button4Bytes);
-      return { button1, button2, button3, button4 };
     }
 
     default:

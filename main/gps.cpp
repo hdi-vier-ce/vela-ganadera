@@ -216,7 +216,7 @@ void WriteDataButton()
 }
 uint8_t Positons(uint8_t RelativePosition, uint8_t ButtonOrder)
 {
-    return (30 + RelativePosition + (ButtonOrder * 10));
+    return (26 + RelativePosition + (ButtonOrder * 10));
 }
 
 uint8_t size;
@@ -225,12 +225,11 @@ std::vector<std::string> DATA;
 #if defined(PAYLOAD_USE_FULL)
 
 // More data than PAYLOAD_USE_CAYENNE
-void buildPacket(uint8_t txBuffer[71])
+void buildPacket(uint8_t txBuffer[57])
 {
     WriteDataButton();
     LatitudeBinary = ((_gps.location.lat() + 90) / 180.0) * 16777215;
     LongitudeBinary = ((_gps.location.lng() + 180) / 360.0) * 16777215;
-    altitudeGps = _gps.altitude.meters();
     hdopGps = _gps.hdop.value() / 10;
     sats = _gps.satellites.value();
     // get time
@@ -248,8 +247,6 @@ void buildPacket(uint8_t txBuffer[71])
     sprintf(t, "Lat: %f", _gps.location.lat());
     Serial.println(t);
     sprintf(t, "Lng: %f", _gps.location.lng());
-    Serial.println(t);
-    sprintf(t, "Alt: %d", altitudeGps);
     Serial.println(t);
     sprintf(t, "Hdop: %d", hdopGps);
     Serial.println(t);
@@ -291,17 +288,13 @@ void buildPacket(uint8_t txBuffer[71])
         dtostrf(latt, 8, 6, Latdeeg);
         Serial.println(Latdeeg);
         double loong = std::stod(tokens[1]);
-        uint16_t altt = std::stoi(tokens[2]);
-        uint8_t hdp = std::stoi(tokens[3]);
-        char HopS[16];
-        itoa(hdp, HopS, 10);
-        Serial.println(HopS);
-        uint8_t sta = std::stoi(tokens[4]);
-        unsigned int hr = std::stoi(tokens[5]);
-        unsigned int Mi = std::stoi(tokens[6]);
-        unsigned int Sec = std::stoi(tokens[7]);
-        uint8_t BPc = std::stoi(tokens[8]);
-        uint8_t Bs = std::stoi(tokens[9]);
+        uint8_t hdp = std::stoi(tokens[2]);
+        uint8_t sta = std::stoi(tokens[3]);
+        unsigned int hr = std::stoi(tokens[4]);
+        unsigned int Mi = std::stoi(tokens[5]);
+        unsigned int Sec = std::stoi(tokens[6]);
+        uint8_t BPc = std::stoi(tokens[7]);
+        uint8_t Bs = std::stoi(tokens[8]);
         uint32_t LatB = ((latt + 90.0) / 180.0) * 16777215.0;
         uint32_t LongB = ((loong + 180.0) / 360.0) * 16777215.0;
         uint32_t Tb = ((hr * 3600) + (Mi * 60) + Sec);
@@ -309,12 +302,12 @@ void buildPacket(uint8_t txBuffer[71])
 
         if (!Queue1.empty())
         {
-            if (Queue1.size() >= 4)
+            if (Queue1.size() >= 3)
             {
                 uint32_t count = 0;
-                while (count != 4)
+                while (count != 3)
                 {
-                    size = 4;
+                    size = 3;
                     String dataButton = Queue1.front();
                     const char *cc = dataButton.c_str();
                     DATA.push_back(cc);
@@ -324,7 +317,7 @@ void buildPacket(uint8_t txBuffer[71])
                 }
                 count = 0;
             }
-            else if (Queue1.size() < 4)
+            else if (Queue1.size() < 3)
             {
                 uint32_t count = 0;
                 while (count != Queue1.size())
@@ -346,31 +339,27 @@ void buildPacket(uint8_t txBuffer[71])
             txBuffer[3] = (LongitudeBinary >> 16) & 0xFF;
             txBuffer[4] = (LongitudeBinary >> 8) & 0xFF;
             txBuffer[5] = LongitudeBinary & 0xFF;
-            txBuffer[6] = (altitudeGps >> 8) & 0xFF;
-            txBuffer[7] = altitudeGps & 0xFF;
-            txBuffer[8] = hdopGps & 0xFF;
-            txBuffer[9] = sats & 0xFF;
-            txBuffer[10] = (timebinary >> 16) & 0xFF;
-            txBuffer[11] = (timebinary >> 8) & 0xFF;
-            txBuffer[12] = timebinary & 0xFF;
-            txBuffer[13] = BatPercentage & 0xFF;
-            txBuffer[14] = Status & 0xFF;
-            txBuffer[15] = (LatB >> 16) & 0xFF;
-            txBuffer[16] = (LatB >> 8) & 0xFF;
-            txBuffer[17] = LatB & 0xFF;
-            txBuffer[18] = (LongB >> 16) & 0xFF;
-            txBuffer[19] = (LongB >> 8) & 0xFF;
-            txBuffer[20] = LongB & 0xFF;
-            txBuffer[21] = (altt >> 8) & 0xFF;
-            txBuffer[22] = altt & 0xFF;
-            txBuffer[23] = hdp & 0xFF;
-            txBuffer[24] = sta & 0xFF;
-            txBuffer[25] = (Tb >> 16) & 0xFF;
-            txBuffer[26] = (Tb >> 8) & 0xFF;
-            txBuffer[27] = Tb & 0xFF;
-            txBuffer[28] = BPB & 0xFF;
-            txBuffer[29] = Bs & 0xFF;
-            txBuffer[30] = size & 0xFF;
+            txBuffer[6] = hdopGps & 0xFF;
+            txBuffer[7] = sats & 0xFF;
+            txBuffer[8] = (timebinary >> 16) & 0xFF;
+            txBuffer[9] = (timebinary >> 8) & 0xFF;
+            txBuffer[10] = timebinary & 0xFF;
+            txBuffer[11] = BatPercentage & 0xFF;
+            txBuffer[12] = Status & 0xFF;
+            txBuffer[13] = (LatB >> 16) & 0xFF;
+            txBuffer[14] = (LatB >> 8) & 0xFF;
+            txBuffer[15] = LatB & 0xFF;
+            txBuffer[16] = (LongB >> 16) & 0xFF;
+            txBuffer[17] = (LongB >> 8) & 0xFF;
+            txBuffer[18] = LongB & 0xFF;
+            txBuffer[19] = hdp & 0xFF;
+            txBuffer[20] = sta & 0xFF;
+            txBuffer[21] = (Tb >> 16) & 0xFF;
+            txBuffer[22] = (Tb >> 8) & 0xFF;
+            txBuffer[23] = Tb & 0xFF;
+            txBuffer[24] = BPB & 0xFF;
+            txBuffer[25] = Bs & 0xFF;
+            txBuffer[26] = size & 0xFF;
 
             for (size_t i = 0; i < size ; i++)
             {
@@ -414,31 +403,27 @@ void buildPacket(uint8_t txBuffer[71])
             txBuffer[3] = (LongitudeBinary >> 16) & 0xFF;
             txBuffer[4] = (LongitudeBinary >> 8) & 0xFF;
             txBuffer[5] = LongitudeBinary & 0xFF;
-            txBuffer[6] = (altitudeGps >> 8) & 0xFF;
-            txBuffer[7] = altitudeGps & 0xFF;
-            txBuffer[8] = hdopGps & 0xFF;
-            txBuffer[9] = sats & 0xFF;
-            txBuffer[10] = (timebinary >> 16) & 0xFF;
-            txBuffer[11] = (timebinary >> 8) & 0xFF;
-            txBuffer[12] = timebinary & 0xFF;
-            txBuffer[13] = BatPercentage & 0xFF;
-            txBuffer[14] = Status & 0xFF;
-            txBuffer[15] = (LatB >> 16) & 0xFF;
-            txBuffer[16] = (LatB >> 8) & 0xFF;
-            txBuffer[17] = LatB & 0xFF;
-            txBuffer[18] = (LongB >> 16) & 0xFF;
-            txBuffer[19] = (LongB >> 8) & 0xFF;
-            txBuffer[20] = LongB & 0xFF;
-            txBuffer[21] = (altt >> 8) & 0xFF;
-            txBuffer[22] = altt & 0xFF;
-            txBuffer[23] = hdp & 0xFF;
-            txBuffer[24] = sta & 0xFF;
-            txBuffer[25] = (Tb >> 16) & 0xFF;
-            txBuffer[26] = (Tb >> 8) & 0xFF;
-            txBuffer[27] = Tb & 0xFF;
-            txBuffer[28] = BPB & 0xFF;
-            txBuffer[29] = Bs & 0xFF;
-            for (size_t i = 30; i < 71; i++)
+            txBuffer[6] = hdopGps & 0xFF;
+            txBuffer[7] = sats & 0xFF;
+            txBuffer[8] = (timebinary >> 16) & 0xFF;
+            txBuffer[9] = (timebinary >> 8) & 0xFF;
+            txBuffer[10] = timebinary & 0xFF;
+            txBuffer[11] = BatPercentage & 0xFF;
+            txBuffer[12] = Status & 0xFF;
+            txBuffer[13] = (LatB >> 16) & 0xFF;
+            txBuffer[14] = (LatB >> 8) & 0xFF;
+            txBuffer[15] = LatB & 0xFF;
+            txBuffer[16] = (LongB >> 16) & 0xFF;
+            txBuffer[17] = (LongB >> 8) & 0xFF;
+            txBuffer[18] = LongB & 0xFF;
+            txBuffer[19] = hdp & 0xFF;
+            txBuffer[20] = sta & 0xFF;
+            txBuffer[21] = (Tb >> 16) & 0xFF;
+            txBuffer[22] = (Tb >> 8) & 0xFF;
+            txBuffer[23] = Tb & 0xFF;
+            txBuffer[24] = BPB & 0xFF;
+            txBuffer[25] = Bs & 0xFF;
+            for (size_t i = 26; i < 67; i++)
             {
                 txBuffer[i] = 0;
             }
@@ -452,12 +437,12 @@ void buildPacket(uint8_t txBuffer[71])
     {
         if (!Queue1.empty())
         {
-            if (Queue1.size() >= 4)
+            if (Queue1.size() >= 3)
             {
                 uint32_t count = 0;
-                while (count != 4)
+                while (count != 3)
                 {
-                    size = 4;
+                    size = 3;
                     String dataButton = Queue1.front();
                     const char *cc = dataButton.c_str();
                     DATA.push_back(cc);
@@ -468,7 +453,7 @@ void buildPacket(uint8_t txBuffer[71])
 
                 Serial.println("reset count 1 ");
             }
-            else if (Queue1.size() < 4)
+            else if (Queue1.size() < 3)
             {
                 uint32_t count = 0;
                 size = Queue1.size();
@@ -492,21 +477,19 @@ void buildPacket(uint8_t txBuffer[71])
             txBuffer[3] = (LongitudeBinary >> 16) & 0xFF;
             txBuffer[4] = (LongitudeBinary >> 8) & 0xFF;
             txBuffer[5] = LongitudeBinary & 0xFF;
-            txBuffer[6] = (altitudeGps >> 8) & 0xFF;
-            txBuffer[7] = altitudeGps & 0xFF;
-            txBuffer[8] = hdopGps & 0xFF;
-            txBuffer[9] = sats & 0xFF;
-            txBuffer[10] = (timebinary >> 16) & 0xFF;
-            txBuffer[11] = (timebinary >> 8) & 0xFF;
-            txBuffer[12] = timebinary & 0xFF;
-            txBuffer[13] = BatPercentage & 0xFF;
-            txBuffer[14] = Status & 0xFF;
-            for (size_t i = 15; i < 30; i++)
+            txBuffer[6] = hdopGps & 0xFF;
+            txBuffer[7] = sats & 0xFF;
+            txBuffer[8] = (timebinary >> 16) & 0xFF;
+            txBuffer[9] = (timebinary >> 8) & 0xFF;
+            txBuffer[10] = timebinary & 0xFF;
+            txBuffer[11] = BatPercentage & 0xFF;
+            txBuffer[12] = Status & 0xFF;
+            for (size_t i = 13; i < 26; i++)
             {
                 txBuffer[i] = 0;
             }
 
-            txBuffer[30] = size & 0xFF;
+            txBuffer[26] = size & 0xFF;
 
             for (size_t i = 0; i < size ; i++)
             {
@@ -545,16 +528,14 @@ void buildPacket(uint8_t txBuffer[71])
             txBuffer[3] = (LongitudeBinary >> 16) & 0xFF;
             txBuffer[4] = (LongitudeBinary >> 8) & 0xFF;
             txBuffer[5] = LongitudeBinary & 0xFF;
-            txBuffer[6] = (altitudeGps >> 8) & 0xFF;
-            txBuffer[7] = altitudeGps & 0xFF;
-            txBuffer[8] = hdopGps & 0xFF;
-            txBuffer[9] = sats & 0xFF;
-            txBuffer[10] = (timebinary >> 16) & 0xFF;
-            txBuffer[11] = (timebinary >> 8) & 0xFF;
-            txBuffer[12] = timebinary & 0xFF;
-            txBuffer[13] = BatPercentage & 0xFF;
-            txBuffer[14] = Status & 0xFF;
-            for (size_t i = 15; i < 71; i++)
+            txBuffer[6] = hdopGps & 0xFF;
+            txBuffer[7] = sats & 0xFF;
+            txBuffer[8] = (timebinary >> 16) & 0xFF;
+            txBuffer[9] = (timebinary >> 8) & 0xFF;
+            txBuffer[10] = timebinary & 0xFF;
+            txBuffer[11] = BatPercentage & 0xFF;
+            txBuffer[12] = Status & 0xFF;
+            for (size_t i = 13; i < 67; i++)
             {
                 txBuffer[i] = 0;
             }
