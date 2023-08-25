@@ -182,7 +182,7 @@ function checkMissing(dataMissing) {
     dataMissing.batteryStatusMissingBytes == 0
   );
 }
-function readBytes(input, position) {
+function readButtonBytes(input, position) {
   const buttonNum = input.bytes[position + 1];
   const timeButton =
     (input.bytes[position + 2] << 16) |
@@ -221,23 +221,23 @@ function buttonsData(input) {
   const numOfButton = input.bytes[30];
   switch (numOfButton) {
     case 1: {
-      const button1Bytes = readBytes(input, 30);
+      const button1Bytes = readButtonBytes(input, 30);
       const button1 = decodeButtonsData(button1Bytes); 
       return { button1 };
     }
 
     case 2: {
-      const button1Bytes = readBytes(input, 30);
-      const button2Bytes = readBytes(input, 40);
+      const button1Bytes = readButtonBytes(input, 30);
+      const button2Bytes = readButtonBytes(input, 40);
       const button1 = decodeButtonsData(button1Bytes);
       const button2 = decodeButtonsData(button2Bytes);
       return { button1, button2 };
     }
 
     case 3: {
-      const button1Bytes = readBytes(input, 30);
-      const button2Bytes = readBytes(input, 40);
-      const button3Bytes = readBytes(input, 50);
+      const button1Bytes = readButtonBytes(input, 30);
+      const button2Bytes = readButtonBytes(input, 40);
+      const button3Bytes = readButtonBytes(input, 50);
       const button1 = decodeButtonsData(button1Bytes);
       const button2 = decodeButtonsData(button2Bytes);
       const button3 = decodeButtonsData(button3Bytes);
@@ -245,10 +245,10 @@ function buttonsData(input) {
     }
 
     case 4: {
-      const button1Bytes = readBytes(input, 30);
-      const button2Bytes = readBytes(input, 40);
-      const button3Bytes = readBytes(input, 50);
-      const button4Bytes = readBytes(input, 60);
+      const button1Bytes = readButtonBytes(input, 30);
+      const button2Bytes = readButtonBytes(input, 40);
+      const button3Bytes = readButtonBytes(input, 50);
+      const button4Bytes = readButtonBytes(input, 60);
       const button1 = decodeButtonsData(button1Bytes);
       const button2 = decodeButtonsData(button2Bytes);
       const button3 = decodeButtonsData(button3Bytes);
