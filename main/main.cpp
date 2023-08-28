@@ -79,7 +79,7 @@ void setPmu_irq(bool value)
 
 #if defined(PAYLOAD_USE_FULL)
 // includes number of satellites and accuracy
-static uint8_t txBuffer[57];
+static uint8_t txBuffer[45];
 #elif defined(PAYLOAD_USE_CAYENNE)
 // CAYENNE DF
 static uint8_t txBuffer[11] = {0x03, 0x88, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00};

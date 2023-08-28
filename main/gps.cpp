@@ -183,11 +183,11 @@ void button1Interrupt()
         char TimeS1[16];
         char LatS1[16];
         char LongS1[16];
-       
+
         itoa(Timeb1, TimeS1, 10);
         itoa(LatitudeBi1, LatS1, 10);
         itoa(LongitudeBi1, LongS1, 10);
-        std::string ButtonData1 = "1 " + std::string(TimeS1) + " " + std::string(LatS1) + " " + std::string(LongS1)  + '\n';
+        std::string ButtonData1 = "1 " + std::string(TimeS1) + " " + std::string(LatS1) + " " + std::string(LongS1) + '\n';
         const char *data1 = ButtonData1.c_str();
         DataButton2.push(data1);
         Serial.println(data1);
@@ -216,7 +216,7 @@ void WriteDataButton()
 }
 uint8_t Positons(uint8_t RelativePosition, uint8_t ButtonOrder)
 {
-    return (26 + RelativePosition + (ButtonOrder * 10));
+    return (14 + RelativePosition + (ButtonOrder * 10));
 }
 
 uint8_t size;
@@ -225,7 +225,7 @@ std::vector<std::string> DATA;
 #if defined(PAYLOAD_USE_FULL)
 
 // More data than PAYLOAD_USE_CAYENNE
-void buildPacket(uint8_t txBuffer[57])
+void buildPacket(uint8_t txBuffer[45])
 {
     WriteDataButton();
     LatitudeBinary = ((_gps.location.lat() + 90) / 180.0) * 16777215;
@@ -271,205 +271,117 @@ void buildPacket(uint8_t txBuffer[57])
         Queue1 = readFile(LittleFS, Button_Data);
     }
 
-    if (!Queue.empty())
+    if (!Queue1.empty())
     {
-        String data = Queue.front();
-
-        // std::string data;
-        Serial.println("sending data to LoRaWAN");
-        Serial.println(data);
-
-        const char *c = data.c_str();
-        std::istringstream iss(c);
-        std::vector<std ::string> tokens{std::istream_iterator<std::string>{iss}, std::istream_iterator<std::string>{}};
-
-        double latt = std::stod(tokens[0]);
-        char Latdeeg[16];
-        dtostrf(latt, 8, 6, Latdeeg);
-        Serial.println(Latdeeg);
-        double loong = std::stod(tokens[1]);
-        uint8_t hdp = std::stoi(tokens[2]);
-        uint8_t sta = std::stoi(tokens[3]);
-        unsigned int hr = std::stoi(tokens[4]);
-        unsigned int Mi = std::stoi(tokens[5]);
-        unsigned int Sec = std::stoi(tokens[6]);
-        uint8_t BPc = std::stoi(tokens[7]);
-        uint8_t Bs = std::stoi(tokens[8]);
-        uint32_t LatB = ((latt + 90.0) / 180.0) * 16777215.0;
-        uint32_t LongB = ((loong + 180.0) / 360.0) * 16777215.0;
-        uint32_t Tb = ((hr * 3600) + (Mi * 60) + Sec);
-        uint8_t BPB = (BPc / 100.0) * 255.0;
-
-        if (!Queue1.empty())
+        uint8_t Nomissing = 1;
+        if (Queue1.size() >= 3)
         {
-            if (Queue1.size() >= 3)
+
+            uint32_t count = 0;
+            while (count != 3)
             {
-                uint32_t count = 0;
-                while (count != 3)
-                {
-                    size = 3;
-                    String dataButton = Queue1.front();
-                    const char *cc = dataButton.c_str();
-                    DATA.push_back(cc);
-                    Serial.println("pushed in vector ");
-                    Queue1.pop();
-                    count++;
-                }
-                count = 0;
+                size = 3;
+                String dataButton = Queue1.front();
+                const char *cc = dataButton.c_str();
+                DATA.push_back(cc);
+                Serial.println("pushed in vector ");
+                Queue1.pop();
+                count++;
             }
-            else if (Queue1.size() < 3)
-            {
-                uint32_t count = 0;
-                while (count != Queue1.size())
-                {
-                    size = Queue1.size();
-                    String dataButton = Queue1.front();
-                    const char *cc = dataButton.c_str();
-                    Serial.println("pushed in vector ");
-                    DATA.push_back(cc);
-                    Queue1.pop();
-                    count++;
-                }
-                count = 0;
-            }
-
-            txBuffer[0] = (LatitudeBinary >> 16) & 0xFF;
-            txBuffer[1] = (LatitudeBinary >> 8) & 0xFF;
-            txBuffer[2] = LatitudeBinary & 0xFF;
-            txBuffer[3] = (LongitudeBinary >> 16) & 0xFF;
-            txBuffer[4] = (LongitudeBinary >> 8) & 0xFF;
-            txBuffer[5] = LongitudeBinary & 0xFF;
-            txBuffer[6] = hdopGps & 0xFF;
-            txBuffer[7] = sats & 0xFF;
-            txBuffer[8] = (timebinary >> 16) & 0xFF;
-            txBuffer[9] = (timebinary >> 8) & 0xFF;
-            txBuffer[10] = timebinary & 0xFF;
-            txBuffer[11] = BatPercentage & 0xFF;
-            txBuffer[12] = Status & 0xFF;
-            txBuffer[13] = (LatB >> 16) & 0xFF;
-            txBuffer[14] = (LatB >> 8) & 0xFF;
-            txBuffer[15] = LatB & 0xFF;
-            txBuffer[16] = (LongB >> 16) & 0xFF;
-            txBuffer[17] = (LongB >> 8) & 0xFF;
-            txBuffer[18] = LongB & 0xFF;
-            txBuffer[19] = hdp & 0xFF;
-            txBuffer[20] = sta & 0xFF;
-            txBuffer[21] = (Tb >> 16) & 0xFF;
-            txBuffer[22] = (Tb >> 8) & 0xFF;
-            txBuffer[23] = Tb & 0xFF;
-            txBuffer[24] = BPB & 0xFF;
-            txBuffer[25] = Bs & 0xFF;
-            txBuffer[26] = size & 0xFF;
-
-            for (size_t i = 0; i < size ; i++)
-            {
-                if (!DATA.empty())
-                {
-                    std::string DatabuttonsString = DATA.front();
-                    const char *DataButtons = DatabuttonsString.c_str();
-
-                    std::istringstream iss(DataButtons);
-                    std::vector<std ::string> Items{std::istream_iterator<std::string>{iss}, std::istream_iterator<std::string>{}};
-                    uint8_t buttonNum = std::stoi(Items[0]);
-                    uint32_t TimeButton = std::stoi(Items[1]);
-                    uint32_t LatitudeButton = std::stoi(Items[2]);
-                    uint32_t LongitudeButton = std::stoi(Items[3]);
-
-
-                    txBuffer[Positons(1, i)] = buttonNum & 0xFF;
-                    txBuffer[Positons(2, i)] = (TimeButton >> 16) & 0xFF;
-                    txBuffer[Positons(3, i)] = (TimeButton >> 8) & 0xFF;
-                    txBuffer[Positons(4, i)] = TimeButton & 0xFF;
-                    txBuffer[Positons(5, i)] = (LatitudeButton >> 16) & 0xFF;
-                    txBuffer[Positons(6, i)] = (LatitudeButton >> 8) & 0xFF;
-                    txBuffer[Positons(7, i)] = LatitudeButton & 0xFF;
-                    txBuffer[Positons(8, i)] = (LongitudeButton >> 16) & 0xFF;
-                    txBuffer[Positons(9, i)] = (LongitudeButton >> 8) ;
-                    txBuffer[Positons(10, i)] = LongitudeButton & 0xFF ;
-                    DATA.erase(DATA.begin());
-                }
-            }
-
-            if (LMIC.txrxFlags & TXRX_ACK)
-            {
-                Queue.pop();
-            }
+            count = 0;
         }
-        else
+        else if (Queue1.size() < 3)
         {
-            txBuffer[0] = (LatitudeBinary >> 16) & 0xFF;
-            txBuffer[1] = (LatitudeBinary >> 8) & 0xFF;
-            txBuffer[2] = LatitudeBinary & 0xFF;
-            txBuffer[3] = (LongitudeBinary >> 16) & 0xFF;
-            txBuffer[4] = (LongitudeBinary >> 8) & 0xFF;
-            txBuffer[5] = LongitudeBinary & 0xFF;
-            txBuffer[6] = hdopGps & 0xFF;
-            txBuffer[7] = sats & 0xFF;
-            txBuffer[8] = (timebinary >> 16) & 0xFF;
-            txBuffer[9] = (timebinary >> 8) & 0xFF;
-            txBuffer[10] = timebinary & 0xFF;
-            txBuffer[11] = BatPercentage & 0xFF;
-            txBuffer[12] = Status & 0xFF;
-            txBuffer[13] = (LatB >> 16) & 0xFF;
-            txBuffer[14] = (LatB >> 8) & 0xFF;
-            txBuffer[15] = LatB & 0xFF;
-            txBuffer[16] = (LongB >> 16) & 0xFF;
-            txBuffer[17] = (LongB >> 8) & 0xFF;
-            txBuffer[18] = LongB & 0xFF;
-            txBuffer[19] = hdp & 0xFF;
-            txBuffer[20] = sta & 0xFF;
-            txBuffer[21] = (Tb >> 16) & 0xFF;
-            txBuffer[22] = (Tb >> 8) & 0xFF;
-            txBuffer[23] = Tb & 0xFF;
-            txBuffer[24] = BPB & 0xFF;
-            txBuffer[25] = Bs & 0xFF;
-            for (size_t i = 26; i < 67; i++)
+            uint32_t count = 0;
+            size = Queue1.size();
+            while (count != size)
             {
-                txBuffer[i] = 0;
+
+                String dataButton = Queue1.front();
+                const char *cc = dataButton.c_str();
+                Serial.println("pushed in vector ");
+                DATA.push_back(cc);
+                Queue1.pop();
+                count++;
             }
-            if (LMIC.txrxFlags & TXRX_ACK)
+            count = 0;
+        }
+
+        txBuffer[0] = (LatitudeBinary >> 16) & 0xFF;
+        txBuffer[1] = (LatitudeBinary >> 8) & 0xFF;
+        txBuffer[2] = LatitudeBinary & 0xFF;
+        txBuffer[3] = (LongitudeBinary >> 16) & 0xFF;
+        txBuffer[4] = (LongitudeBinary >> 8) & 0xFF;
+        txBuffer[5] = LongitudeBinary & 0xFF;
+        txBuffer[6] = hdopGps & 0xFF;
+        txBuffer[7] = sats & 0xFF;
+        txBuffer[8] = (timebinary >> 16) & 0xFF;
+        txBuffer[9] = (timebinary >> 8) & 0xFF;
+        txBuffer[10] = timebinary & 0xFF;
+        txBuffer[11] = BatPercentage & 0xFF;
+        txBuffer[12] = Status & 0xFF;
+        txBuffer[13] = Nomissing & 0xFF;
+        txBuffer[14] = size & 0xFF;
+
+        for (size_t i = 0; i < size; i++)
+        {
+            if (!DATA.empty())
             {
-                Queue.pop();
+                std::string DatabuttonsString = DATA.front();
+                const char *DataButtons = DatabuttonsString.c_str();
+
+                std::istringstream iss(DataButtons);
+                std::vector<std ::string> Items{std::istream_iterator<std::string>{iss}, std::istream_iterator<std::string>{}};
+                uint8_t buttonNum = std::stoi(Items[0]);
+                uint32_t TimeButton = std::stoi(Items[1]);
+                uint32_t LatitudeButton = std::stoi(Items[2]);
+                uint32_t LongitudeButton = std::stoi(Items[3]);
+
+                txBuffer[Positons(1, i)] = buttonNum & 0xFF;
+                txBuffer[Positons(2, i)] = (TimeButton >> 16) & 0xFF;
+                txBuffer[Positons(3, i)] = (TimeButton >> 8) & 0xFF;
+                txBuffer[Positons(4, i)] = TimeButton & 0xFF;
+                txBuffer[Positons(5, i)] = (LatitudeButton >> 16) & 0xFF;
+                txBuffer[Positons(6, i)] = (LatitudeButton >> 8) & 0xFF;
+                txBuffer[Positons(7, i)] = LatitudeButton & 0xFF;
+                txBuffer[Positons(8, i)] = (LongitudeButton >> 16) & 0xFF;
+                txBuffer[Positons(9, i)] = (LongitudeButton >> 8);
+                txBuffer[Positons(10, i)] = LongitudeButton & 0xFF;
+                DATA.erase(DATA.begin());
             }
         }
     }
     else
     {
-        if (!Queue1.empty())
+        uint8_t Nomissing = 0;
+        if (!Queue.empty())
         {
-            if (Queue1.size() >= 3)
-            {
-                uint32_t count = 0;
-                while (count != 3)
-                {
-                    size = 3;
-                    String dataButton = Queue1.front();
-                    const char *cc = dataButton.c_str();
-                    DATA.push_back(cc);
-                    Serial.println("pushed in vector 1 ");
-                    Queue1.pop();
-                    count++;
-                }
+            String data = Queue.front();
 
-                Serial.println("reset count 1 ");
-            }
-            else if (Queue1.size() < 3)
-            {
-                uint32_t count = 0;
-                size = Queue1.size();
-                while (count < size)
-                {
+            // std::string data;
+            Serial.println("sending data to LoRaWAN");
+            Serial.println(data);
 
-                    String dataButton = Queue1.front();
-                    const char *cc = dataButton.c_str();
-                    Serial.println("pushed in vector 2 ");
-                    DATA.push_back(cc);
-                    Queue1.pop();
-                    count++;
-                }
+            const char *c = data.c_str();
+            std::istringstream iss(c);
+            std::vector<std ::string> tokens{std::istream_iterator<std::string>{iss}, std::istream_iterator<std::string>{}};
 
-                Serial.println("reset count 2 ");
-            }
+            double latt = std::stod(tokens[0]);
+            char Latdeeg[16];
+            dtostrf(latt, 8, 6, Latdeeg);
+            Serial.println(Latdeeg);
+            double loong = std::stod(tokens[1]);
+            uint8_t hdp = std::stoi(tokens[2]);
+            uint8_t sta = std::stoi(tokens[3]);
+            unsigned int hr = std::stoi(tokens[4]);
+            unsigned int Mi = std::stoi(tokens[5]);
+            unsigned int Sec = std::stoi(tokens[6]);
+            uint8_t BPc = std::stoi(tokens[7]);
+            uint8_t Bs = std::stoi(tokens[8]);
+            uint32_t LatB = ((latt + 90.0) / 180.0) * 16777215.0;
+            uint32_t LongB = ((loong + 180.0) / 360.0) * 16777215.0;
+            uint32_t Tb = ((hr * 3600) + (Mi * 60) + Sec);
+            uint8_t BPB = (BPc / 100.0) * 255.0;
 
             txBuffer[0] = (LatitudeBinary >> 16) & 0xFF;
             txBuffer[1] = (LatitudeBinary >> 8) & 0xFF;
@@ -484,44 +396,32 @@ void buildPacket(uint8_t txBuffer[57])
             txBuffer[10] = timebinary & 0xFF;
             txBuffer[11] = BatPercentage & 0xFF;
             txBuffer[12] = Status & 0xFF;
-            for (size_t i = 13; i < 26; i++)
+            txBuffer[13] = Nomissing & 0xFF;
+            txBuffer[14] = (LatB >> 16) & 0xFF;
+            txBuffer[15] = (LatB >> 8) & 0xFF;
+            txBuffer[16] = LatB & 0xFF;
+            txBuffer[17] = (LongB >> 16) & 0xFF;
+            txBuffer[18] = (LongB >> 8) & 0xFF;
+            txBuffer[19] = LongB & 0xFF;
+            txBuffer[20] = hdp & 0xFF;
+            txBuffer[21] = sta & 0xFF;
+            txBuffer[22] = (Tb >> 16) & 0xFF;
+            txBuffer[23] = (Tb >> 8) & 0xFF;
+            txBuffer[24] = Tb & 0xFF;
+            txBuffer[25] = BPB & 0xFF;
+            txBuffer[26] = Bs & 0xFF;
+            for (size_t i = 27; i < 45 ; i++)
             {
                 txBuffer[i] = 0;
             }
-
-            txBuffer[26] = size & 0xFF;
-
-            for (size_t i = 0; i < size ; i++)
+            if (LMIC.txrxFlags & TXRX_ACK)
             {
-                if (!DATA.empty())
-                {
-                    std::string DatabuttonsString = DATA.front();
-                    const char *DataButtons = DatabuttonsString.c_str();
-
-                    std::istringstream iss(DataButtons);
-                    std::vector<std ::string> Items{std::istream_iterator<std::string>{iss}, std::istream_iterator<std::string>{}};
-                    uint8_t buttonNum = std::stoi(Items[0]);
-                    uint32_t TimeButton = std::stoi(Items[1]);
-                    uint32_t LatitudeButton = std::stoi(Items[2]);
-                    uint32_t LongitudeButton = std::stoi(Items[3]);
-                
-
-                    txBuffer[Positons(1, i)] = buttonNum & 0xFF;
-                    txBuffer[Positons(2, i)] = (TimeButton >> 16) & 0xFF;
-                    txBuffer[Positons(3, i)] = (TimeButton >> 8) & 0xFF;
-                    txBuffer[Positons(4, i)] = TimeButton & 0xFF;
-                    txBuffer[Positons(5, i)] = (LatitudeButton >> 16) & 0xFF;
-                    txBuffer[Positons(6, i)] = (LatitudeButton >> 8) & 0xFF;
-                    txBuffer[Positons(7, i)] = LatitudeButton & 0xFF;
-                    txBuffer[Positons(8, i)] = (LongitudeButton >> 16) & 0xFF;
-                    txBuffer[Positons(9, i)] = (LongitudeButton >> 8) & 0xFF;
-                    txBuffer[Positons(10, i)] = LongitudeButton & 0xFF;
-                    DATA.erase(DATA.begin());
-                }
+                Queue.pop();
             }
         }
         else
-        {
+        {   
+            uint8_t Nomissing = 1;
             txBuffer[0] = (LatitudeBinary >> 16) & 0xFF;
             txBuffer[1] = (LatitudeBinary >> 8) & 0xFF;
             txBuffer[2] = LatitudeBinary & 0xFF;
@@ -535,14 +435,14 @@ void buildPacket(uint8_t txBuffer[57])
             txBuffer[10] = timebinary & 0xFF;
             txBuffer[11] = BatPercentage & 0xFF;
             txBuffer[12] = Status & 0xFF;
-            for (size_t i = 13; i < 67; i++)
+            txBuffer[13] = Nomissing & 0xFF;
+            for (size_t i = 14; i < 45; i++)
             {
                 txBuffer[i] = 0;
             }
         }
     }
 }
-
 #elif defined(PAYLOAD_USE_CAYENNE)
 
 // CAYENNE DF

@@ -10,7 +10,7 @@
 function decodeUplink(input) {
   const data = decodeDataBytes(input);
   const dataMissing = decodeMissingBytes(input);
-  if (!checkMissing(dataMissing) && !checkButtons(input)) {
+  if (!checkMissing(input) && !checkButtons(input)) {
     return {
       data,
     };
@@ -18,7 +18,7 @@ function decodeUplink(input) {
     const missingData = decodeMissingData(dataMissing);
     return {
       data: {
-        latitude: data.altitude,
+        latitude: data.latitude,
         longitude: data.longitude,
         hdop: data.hdop,
         stats: data.stats,
@@ -30,11 +30,11 @@ function decodeUplink(input) {
         missingData,
       },
     };
-  } else if (!checkMissing(dataMissing)) {
+  } else if (!checkMissing(input)) {
     const buttonData = buttonsData(input);
     return {
       data: {
-        latitude: data.altitude,
+        latitude: data.latitude,
         longitude: data.longitude,
         hdop: data.hdop,
         stats: data.stats,
@@ -43,24 +43,6 @@ function decodeUplink(input) {
         timeSec: data.timeSec,
         batteryPercentage: data.batteryPercentage,
         batStatus: data.batStatus,
-        buttonData,
-      },
-    };
-  } else {
-    const missingData = decodeMissingData(dataMissing);
-    const buttonData = buttonsData(input);
-    return {
-      data: {
-        latitude: data.altitude,
-        longitude: data.longitude,
-        hdop: data.hdop,
-        stats: data.stats,
-        timeHrs: data.timeHrs,
-        timeMin: data.timeMin,
-        timeSec: data.timeSec,
-        batteryPercentage: data.batteryPercentage,
-        batStatus: data.batStatus,
-        missingData,
         buttonData,
       },
     };
@@ -119,15 +101,15 @@ function decodeDataBytes(input) {
 
 function decodeMissingBytes(input) {
   const latMissingBytes =
-    (input.bytes[13] << 16) | (input.bytes[14] << 8) | input.bytes[15];
+    (input.bytes[14] << 16) | (input.bytes[15] << 8) | input.bytes[16];
   const longMissingBytes =
-    (input.bytes[16] << 16) | (input.bytes[17] << 8) | input.bytes[18];
-  const hdopMissingBytes = input.bytes[19];
-  const statMissingBytes = input.bytes[20];
+    (input.bytes[17] << 16) | (input.bytes[18] << 8) | input.bytes[19];
+  const hdopMissingBytes = input.bytes[20];
+  const statMissingBytes = input.bytes[21];
   const timeMissingBytes =
-    (input.bytes[21] << 16) | (input.bytes[22] << 8) | input.bytes[23];
-  const batMissingBytes = input.bytes[24];
-  const batteryStatusMissingBytes = input.bytes[25];
+    (input.bytes[22] << 16) | (input.bytes[23] << 8) | input.bytes[24];
+  const batMissingBytes = input.bytes[25];
+  const batteryStatusMissingBytes = input.bytes[26];
   return {
     latMissingBytes,
     longMissingBytes,
@@ -153,7 +135,7 @@ function decodeMissingData(dataMissing) {
     latMissing,
     longMissing,
     hdpMissing,
-    statMissingBytes,
+    statMissingBytes : dataMissing.statMissingBytes,
     timeHrsMissing,
     timeMinMissing,
     timeSecMissing,
@@ -162,15 +144,9 @@ function decodeMissingData(dataMissing) {
   };
 }
 
-function checkMissing(dataMissing) {
+function checkMissing(input) {
   return !(
-    dataMissing.latMissingBytes == 0 &&
-    dataMissing.longMissingBytes == 0 &&
-    dataMissing.hdopMissingBytes == 0 &&
-    dataMissing.statMissingBytes == 0 &&
-    dataMissing.timeMissingBytes == 0 &&
-    dataMissing.batMissingBytes == 0 &&
-    dataMissing.batteryStatusMissingBytes == 0
+    input.bytes[13] == 1 
   );
 }
 function readButtonBytes(input, position) {
@@ -215,26 +191,26 @@ function decodeButtonsData(dataButtons) {
 }
 
 function buttonsData(input) {
-  const numOfButton = input.bytes[30];
+  const numOfButton = input.bytes[14];
   switch (numOfButton) {
     case 1: {
-      const button1Bytes = readButtonBytes(input, 30);
+      const button1Bytes = readButtonBytes(input, 14);
       const button1 = decodeButtonsData(button1Bytes); 
       return { button1Bytes, button1 };
     }
 
     case 2: {
-      const button1Bytes = readButtonBytes(input, 30);
-      const button2Bytes = readButtonBytes(input, 40);
+      const button1Bytes = readButtonBytes(input, 24);
+      const button2Bytes = readButtonBytes(input, 34);
       const button1 = decodeButtonsData(button1Bytes);
       const button2 = decodeButtonsData(button2Bytes);
       return { button1Bytes , button2Bytes , button1, button2 };
     }
 
     case 3: {
-      const button1Bytes = readButtonBytes(input, 30);
-      const button2Bytes = readButtonBytes(input, 40);
-      const button3Bytes = readButtonBytes(input, 50);
+      const button1Bytes = readButtonBytes(input, 24);
+      const button2Bytes = readButtonBytes(input, 34);
+      const button3Bytes = readButtonBytes(input, 44);
       const button1 = decodeButtonsData(button1Bytes);
       const button2 = decodeButtonsData(button2Bytes);
       const button3 = decodeButtonsData(button3Bytes);
@@ -250,6 +226,6 @@ function buttonsData(input) {
 
 function checkButtons(input) {
   return !(
-    input.bytes[30] == 0
+    input.bytes[14] == 0
   );
 }

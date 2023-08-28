@@ -474,6 +474,8 @@ uint32_t countRead = 0;
 int countreadF = 3;
 void lorawan_send(uint8_t *data, uint8_t data_size, uint8_t port, bool confirmed)
 {
+     os_runloop_once();
+
     lorawan_set_cnt(); // we are about to send using the current packet count
 
     // Check if there is not a current TX/RX job running
