@@ -26,6 +26,7 @@
 #include "main.h"
 #include <queue>
 #include "FS.h"
+#include "screen.h"
 #include "LittleFS.h"
 #include <flash.h>
 #include <iostream>
@@ -138,6 +139,7 @@ void button2Interrupt()
         Timeb = ((_gps.time.hour() * 3600) + (_gps.time.minute() * 60) + _gps.time.second());
         LatitudeBi2 = ((_gps.location.lat() + 90) / 180.0) * 16777215;
         LongitudeBi2 = ((_gps.location.lng() + 180) / 360.0) * 16777215;
+        screen_print("Button 2 pressed \n");
     }
     else
     {
@@ -173,6 +175,7 @@ void button1Interrupt()
         Timeb1 = ((_gps.time.hour() * 3600) + (_gps.time.minute() * 60) + _gps.time.second());
         LatitudeBi1 = ((_gps.location.lat() + 90) / 180.0) * 16777215;
         LongitudeBi1 = ((_gps.location.lng() + 180) / 360.0) * 16777215;
+         screen_print("Button 1 pressed \n");
     }
     else
     {
@@ -350,6 +353,7 @@ void buildPacket(uint8_t txBuffer[45])
                 DATA.erase(DATA.begin());
             }
         }
+         screen_print("Sending buttons data to LoRaWan\n");
     }
     else
     {
@@ -397,20 +401,21 @@ void buildPacket(uint8_t txBuffer[45])
             txBuffer[11] = BatPercentage & 0xFF;
             txBuffer[12] = Status & 0xFF;
             txBuffer[13] = Nomissing & 0xFF;
-            txBuffer[14] = (LatB >> 16) & 0xFF;
-            txBuffer[15] = (LatB >> 8) & 0xFF;
-            txBuffer[16] = LatB & 0xFF;
-            txBuffer[17] = (LongB >> 16) & 0xFF;
-            txBuffer[18] = (LongB >> 8) & 0xFF;
-            txBuffer[19] = LongB & 0xFF;
-            txBuffer[20] = hdp & 0xFF;
-            txBuffer[21] = sta & 0xFF;
-            txBuffer[22] = (Tb >> 16) & 0xFF;
-            txBuffer[23] = (Tb >> 8) & 0xFF;
-            txBuffer[24] = Tb & 0xFF;
-            txBuffer[25] = BPB & 0xFF;
-            txBuffer[26] = Bs & 0xFF;
-            for (size_t i = 27; i < 45 ; i++)
+            txBuffer[14] = 0 ;
+            txBuffer[15] = (LatB >> 16) & 0xFF;
+            txBuffer[16] = (LatB >> 8) & 0xFF;
+            txBuffer[17] = LatB & 0xFF;
+            txBuffer[18] = (LongB >> 16) & 0xFF;
+            txBuffer[19] = (LongB >> 8) & 0xFF;
+            txBuffer[20] = LongB & 0xFF;
+            txBuffer[21] = hdp & 0xFF;
+            txBuffer[22] = sta & 0xFF;
+            txBuffer[23] = (Tb >> 16) & 0xFF;
+            txBuffer[24] = (Tb >> 8) & 0xFF;
+            txBuffer[25] = Tb & 0xFF;
+            txBuffer[26] = BPB & 0xFF;
+            txBuffer[27] = Bs & 0xFF;
+            for (size_t i = 28; i < 45 ; i++)
             {
                 txBuffer[i] = 0;
             }
@@ -418,6 +423,7 @@ void buildPacket(uint8_t txBuffer[45])
             {
                 Queue.pop();
             }
+            screen_print("Sending Missing Data to LoRaWan\n");
         }
         else
         {   
