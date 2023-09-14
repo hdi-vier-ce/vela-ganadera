@@ -310,7 +310,7 @@ void lorawan_join()
     LMIC_setClockError(MAX_CLOCK_ERROR * CLOCK_ERROR / 100);
 #endif
 
-/**#if defined(CFG_eu868)
+#if defined(CFG_eu868)
 
     // Set up the channels used by the Things Network, which corresponds
     // to the defaults of most gateways. Without this, only three base
@@ -328,9 +328,9 @@ void lorawan_join()
     LMIC_setupChannel(5, 867500000, DR_RANGE_MAP(DR_SF12, DR_SF7), BAND_CENTI);  // g-band
     LMIC_setupChannel(6, 867700000, DR_RANGE_MAP(DR_SF12, DR_SF7), BAND_CENTI);  // g-band
     LMIC_setupChannel(7, 867900000, DR_RANGE_MAP(DR_SF12, DR_SF7), BAND_CENTI);  // g-band
-    LMIC_setupChannel(8, 868800000, DR_RANGE_MAP(DR_FSK, DR_FSK), BAND_MILLI);   // g2-band*/
+    LMIC_setupChannel(8, 868800000, DR_RANGE_MAP(DR_FSK, DR_FSK), BAND_MILLI);   // g2-band
 
-#if defined(CFG_us915)
+#elif defined(CFG_us915)
 
     // NA-US channels 0-71 are configured automatically
     // but only one group of 8 should (a subband) should be active
@@ -470,54 +470,18 @@ void lorawan_erase_prefs()
         p.end();
     }
 }
-const char *processData(const uint8_t *data)
-{
-    uint32_t lat = (data[0] << 16) | (data[1] << 8) | data[2];
-    double Latdeg = ((lat / 16777215.0) * 180.0) - 90;
-    uint32_t longg = (data[3] << 16) | (data[4] << 8) | data[5];
-    double Longdeg = ((longg / 16777215.0) * 360.0) - 180;
-    uint8_t Hdop = data[6];
-    uint8_t stat = data[7];
-    uint32_t time = (data[8] << 16) | (data[9] << 8) | data[10];
-    unsigned int Hour = time / 3600;
-    unsigned int Min = (time % 3600) / 60;
-    unsigned int Sec = time % 60;
-    unsigned int Bat = data[11];
-    uint8_t BattP = static_cast<int>((Bat / 255.0) * 100);
-    uint8_t BattS = data[12];
 
-    char LatdegS[16], LongdegS[16], HdoopS[16], statS[16], HourS[16], MinS[16], SecS[16], BattPS[16], BattSS[16];
-    dtostrf(Latdeg, 8, 6, LatdegS);
-    dtostrf(Longdeg, 8, 6, LongdegS);
-    itoa(Hdop, HdoopS, 10);
-    itoa(stat, statS, 10);
-    itoa(Hour, HourS, 10);
-    itoa(Min, MinS, 10);
-    itoa(Sec, SecS, 10);
-    itoa(BattP, BattPS, 10);
-    itoa(BattS, BattSS, 10);
 
-    std::string FailData = std::string(LatdegS) + " " + std::string(LongdegS) + " " + std::string(HdoopS) + " " + std::string(statS) + " " + std::string(HourS) + " " + std::string(MinS) + " " + std::string(SecS) + " " + std::string(BattPS) + " " + std::string(BattSS) + '\n';
-    static std::string FailDataCopy = FailData; // Make a copy to ensure the data remains valid after the function returns
-    return FailDataCopy.c_str();
-}
-
-uint32_t countRead = 0;
-int countreadF = 3;
 void lorawan_send(uint8_t *data, uint8_t data_size, uint8_t port, bool confirmed)
 {
-    os_runloop_once();
 
     lorawan_set_cnt(); // we are about to send using the current packet count
 
     // Check if there is not a current TX/RX job running
     if (LMIC.opmode & OP_TXRXPEND)
     {
-        const char *pendingdata = processData(data);
-        appendFile(LittleFS, FAILED_DATA_FILE, pendingdata);
+        
         _lorawan_callback(EV_PENDING);
-        ESP.restart();
-
         return;
     }
     if (LMIC.txrxFlags & TXRX_NACK) // confirmed UP frame was not acked and the TX-RX combo ---> for cheking the failure
@@ -525,24 +489,7 @@ void lorawan_send(uint8_t *data, uint8_t data_size, uint8_t port, bool confirmed
         Serial.println(F("Failure in sending "));
         screen_print("Failed to send \n ");
         _lorawan_callback(EV_FAILED);
-        const char *dst = processData(data);
-
-        appendFile(LittleFS, FAILED_DATA_FILE, dst);
-
-        _lorawan_callback(EV_QUEUED);
-        countRead++;
         count++;
-        char te = read(LittleFS, Configuration_ResetFile_FILE);
-        if (isdigit(te))
-        {
-            int Reset_int = std::stoi(&te);
-            countreadF = Reset_int;
-        }
-
-        if (countRead % countreadF == 0)
-        {
-            ESP.restart();
-        }
 
         return;
     }

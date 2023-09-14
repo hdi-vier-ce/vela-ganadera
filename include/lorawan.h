@@ -8,7 +8,5 @@ bool lorawan_setup();
 void lorawan_join();
 void lorawan_adr(bool enabled);
 void lorawan_loop();
-void SendFailedData ();
-const char *processData(const uint8_t *data) ; 
 
 //void ConnectionStatues (bool Connected);

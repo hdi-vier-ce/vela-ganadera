@@ -188,10 +188,10 @@ void deleteFile(fs::FS &fs, const char *path)
         Serial.println("- delete failed");
     }
 }
-char read(fs::FS &fs, const char *path)
+String read(fs::FS &fs, const char *path)
 {
     Serial.printf("Reading file: %s\r\n", path);
-    char temps;
+    String temps ;
     File file = fs.open(path);
     if (!file || file.isDirectory())
     {
@@ -202,8 +202,9 @@ char read(fs::FS &fs, const char *path)
     Serial.println("− read from file:");
     while (file.available())
     {
-        temps = file.read();
-        Serial.write(temps);
+        char data = file.read();
+        temps += data;
     }
+    file.close();
     return temps;
 }

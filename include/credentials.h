@@ -32,7 +32,7 @@ Credentials file
 
     // This should also be in little endian format (lsb), see above.
     // Note: You do not need to set this field, if unset it will be generated automatically based on the device macaddr
-    static u1_t DEVEUI[8]  = { 0xb6, 0x7d, 0x95, 0xe3, 0xfc, 0x44, 0x24, 0x96 };
+    static u1_t DEVEUI[8]  = { 0xb6, 0x7d, 0x95, 0xe3, 0xfc, 0x44, 0xfc, 0x2d };
 
     // This key should be in big endian format (msb) (or, since it is not really a
     // number but a block of memory, endianness does not really apply). In
