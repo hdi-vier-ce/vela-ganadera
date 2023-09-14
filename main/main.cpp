@@ -35,8 +35,6 @@
 #include "LittleFS.h"
 #include <flash.h>
 
-int SEND_INTERVAL = 60 * 1000;
-
 String baChStatus = "No charging";
 
 bool ssd1306_found = false;
@@ -47,6 +45,8 @@ bool Reset = true;
 
 bool packetSent, packetQueued;
 float BatteryPercentage = axp.getBattPercentage();
+bool TimeOpen = true ; 
+
 
 String getBaChStatus()
 {
@@ -79,7 +79,7 @@ void setPmu_irq(bool value)
 
 #if defined(PAYLOAD_USE_FULL)
 // includes number of satellites and accuracy
-static uint8_t txBuffer[45];
+static uint8_t txBuffer[13];
 #elif defined(PAYLOAD_USE_CAYENNE)
 // CAYENNE DF
 static uint8_t txBuffer[11] = {0x03, 0x88, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00};
@@ -254,29 +254,37 @@ void callback(uint8_t message)
         screen_print("[LoRaWAN] Response: ");
 
         size_t len = lorawan_response_len();
+        // size_t len = 3 ;
         uint8_t data[len];
         lorawan_response(data, len);
 
-        char buffer[6];
-        char NextBuffer[6];
 
-        for (uint8_t i = 0; i < len - 1; i++)
+        /*for (uint8_t i = 0; i < len ; i++)
         {
-            snprintf(buffer, sizeof(buffer), "%02X", data[i]);
-            snprintf(NextBuffer, sizeof(NextBuffer), "%X", data[i + 1]);
+            snprintf(buffer, sizeof(buffer), "%X", data[i]);
+            Serial.println(buffer);
 
-            if (data[i] == 00)
+            if (data[1] == 00)
             {
                 writeFile(LittleFS, Configuration_SendFile_FILE, NextBuffer);
             }
-            if (data[i] == 01)
+
+        }*/
+        
+            char buffer[10] = "";
+            for (uint8_t i = 1; i < len; i++)
             {
-                writeFile(LittleFS, Configuration_ResetFile_FILE, NextBuffer);
+                char temp[4];
+                snprintf(temp, sizeof(temp), "%X", data[i]);
+                Serial.println(temp) ; 
+                strncat(buffer, temp, sizeof(buffer) - strlen(buffer) - 1);
             }
-        }
+            Serial.println(buffer);
+            writeFile(LittleFS, Configuration_Time_FILE, buffer);
+            ESP.restart();
+        
     }
 
-    Downlink = true;
 }
 
 void scanI2Cdevice(void)
@@ -438,7 +446,7 @@ void setup()
 
     // Init GPS
     gps_setup();
-    Buttonsetup() ; 
+    Buttonsetup();
 
 // Show logo on first boot after removing battery
 #ifndef ALWAYS_SHOW_LOGO
@@ -473,23 +481,20 @@ void setup()
         lorawan_adr(LORAWAN_ADR);
     }
 }
-
+String OpenTime ; 
 void loop()
 {
     gps_loop();
     lorawan_loop();
     screen_loop();
-    
-
-    if (Read)
+    if (TimeOpen)
     {
-        if (counter == 0)
-        {
-            ReadData();
-            Read = false;
-            counter = 1;
-        }
+       OpenTime = read(LittleFS, Configuration_Time_FILE);
+        
+       TimeOpen = false ; 
     }
+    CheckTime(OpenTime);
+    
     if (packetSent)
     {
         packetSent = false;
@@ -532,20 +537,6 @@ void loop()
     // Send every SEND_INTERVAL millis
     static uint32_t last = 0;
     static bool first = true;
-    if (Downlink)
-    {
-        Downlink = false;
-        char temp = read(LittleFS, Configuration_SendFile_FILE);
-        int send_int = std::stoi(&temp);
-        SEND_INTERVAL = (send_int * 60) * 1000;
-    }
-    if (Reset)
-    {
-        Reset = false;
-        char tem = read(LittleFS, Configuration_SendFile_FILE);
-        int sendTemp = std::stoi(&tem);
-        SEND_INTERVAL = (sendTemp * 60) * 1000;
-    }
 
     if (0 == last || millis() - last > SEND_INTERVAL)
     {
