@@ -222,7 +222,6 @@ void onEvent(ev_t event)
         if (LMIC.txrxFlags & TXRX_ACK)
         { // confirmed Up are acked
             Serial.println(F("Received ack"));
-            _lorawan_callback(EV_ACK);
         }
         else
         {
@@ -497,7 +496,6 @@ void lorawan_send(uint8_t *data, uint8_t data_size, uint8_t port, bool confirmed
     // Prepare upstream data transmission at the next possible time.
     // Parameters are port, data, length, confirmed
     LMIC_setTxData2(port, data, data_size, confirmed ? 1 : 0);
-    _lorawan_callback(EV_QUEUED);
 
     count++;
 }

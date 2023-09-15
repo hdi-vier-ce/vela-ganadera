@@ -32,6 +32,7 @@
 #include <iostream>
 #include <sstream>
 #include <iterator>
+#include <L298N.h>
 
 uint32_t LatitudeBinary;
 uint32_t LongitudeBinary;
@@ -67,6 +68,11 @@ HardwareSerial _serial_gps(GPS_SERIAL_NUM);
 uint8_t BatPercent = axp2.getBattPercentage();
 bool Remove = axp2.isVbusRemoveIRQ();
 uint8_t Status;
+
+const unsigned int IN1 = 14;
+const unsigned int IN2 = 15;
+const unsigned int EN = 2;
+L298N motor(EN, IN1, IN2);
 
 void gps_time(char *buffer, uint8_t size)
 {
@@ -110,21 +116,42 @@ void gps_loop()
         _gps.encode(_serial_gps.read());
     }
 }
-void CheckTime(String OpenTime)
+void Motor_Setup()
 {
+    motor.setSpeed(70);
+}
 
-       const char *Open = OpenTime.c_str();
+void Turn_Motor()
+{
+    motor.setSpeed(255);
 
-        
+    motor.forward();
+    // motor.run(L298N::FORWARD);
+
+    delay(3000);
+    motor.stop();
+}
+
+void CheckTime(String OpenTime)
+
+{
+    if (!OpenTime.isEmpty())
+    {
+
+        const char *Open = OpenTime.c_str();
+
         std::string timeStr(Open);
         int HH = std::stoi(timeStr.substr(0, 2));
         int MM = std::stoi(timeStr.substr(2, 2));
         int SS = std::stoi(timeStr.substr(4, 2));
+
         if (HH == _gps.time.hour() && MM == _gps.time.minute() && SS == _gps.time.second())
         {
-            Serial.print("open at this time ");
+            Turn_Motor();
+            // sleep(1);
+            // screen_print("Turnning now");
         }
-    
+    }
 }
 
 void Buttonsetup()

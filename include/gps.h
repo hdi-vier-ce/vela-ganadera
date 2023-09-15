@@ -12,3 +12,5 @@ void gps_loop();
 void button1Interrupt();
 void  Buttonsetup() ;
 void CheckTime(String OpenTime) ; 
+void Motor_Setup() ; 
+void Turn_Motor() ; 

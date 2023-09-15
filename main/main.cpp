@@ -45,8 +45,7 @@ bool Reset = true;
 
 bool packetSent, packetQueued;
 float BatteryPercentage = axp.getBattPercentage();
-bool TimeOpen = true ; 
-
+bool TimeOpen = true;
 
 String getBaChStatus()
 {
@@ -108,10 +107,6 @@ bool trySend()
     snprintf(buffer, sizeof(buffer), "Latitude: %10.6f\n", gps_latitude());
     screen_print(buffer);
     snprintf(buffer, sizeof(buffer), "Longitude: %10.6f\n", gps_longitude());
-    screen_print(buffer);
-    snprintf(buffer, sizeof(buffer), "Altitude: %f\n", gps_altitude());
-    screen_print(buffer);
-    snprintf(buffer, sizeof(buffer), "Error: %4.2fm\n", gps_hdop());
     screen_print(buffer);
     snprintf(buffer, sizeof(buffer), "Percentage: %1.0f %\n", axp.getBattPercentage());
     screen_print(buffer);
@@ -252,39 +247,31 @@ void callback(uint8_t message)
     {
 
         screen_print("[LoRaWAN] Response: ");
+        screen_print("\n");
+        screen_print("Open at ");
 
         size_t len = lorawan_response_len();
-        // size_t len = 3 ;
         uint8_t data[len];
         lorawan_response(data, len);
 
-
-        /*for (uint8_t i = 0; i < len ; i++)
+        char buffer[12] = "";
+        for (uint8_t i = 1; i < len; i++)
         {
-            snprintf(buffer, sizeof(buffer), "%X", data[i]);
-            Serial.println(buffer);
+            char temp[4];
+            snprintf(temp, sizeof(temp), "%2X", data[i]);
+            Serial.println(temp);
+            screen_print(temp);
+            screen_print(":");
 
-            if (data[1] == 00)
-            {
-                writeFile(LittleFS, Configuration_SendFile_FILE, NextBuffer);
-            }
+            strncat(buffer, temp, sizeof(buffer) - strlen(buffer) - 1);
+        }
+        Serial.println(buffer);
+        // screen_print(buffer);
+        screen_print("\n");
 
-        }*/
-        
-            char buffer[10] = "";
-            for (uint8_t i = 1; i < len; i++)
-            {
-                char temp[4];
-                snprintf(temp, sizeof(temp), "%X", data[i]);
-                Serial.println(temp) ; 
-                strncat(buffer, temp, sizeof(buffer) - strlen(buffer) - 1);
-            }
-            Serial.println(buffer);
-            writeFile(LittleFS, Configuration_Time_FILE, buffer);
-            ESP.restart();
-        
+        writeFile(LittleFS, Configuration_Time_FILE, buffer);
+        TimeOpen = true;
     }
-
 }
 
 void scanI2Cdevice(void)
@@ -447,6 +434,7 @@ void setup()
     // Init GPS
     gps_setup();
     Buttonsetup();
+    Motor_Setup() ; 
 
 // Show logo on first boot after removing battery
 #ifndef ALWAYS_SHOW_LOGO
@@ -481,7 +469,7 @@ void setup()
         lorawan_adr(LORAWAN_ADR);
     }
 }
-String OpenTime ; 
+String OpenTime;
 void loop()
 {
     gps_loop();
@@ -489,12 +477,12 @@ void loop()
     screen_loop();
     if (TimeOpen)
     {
-       OpenTime = read(LittleFS, Configuration_Time_FILE);
-        
-       TimeOpen = false ; 
+        OpenTime = read(LittleFS, Configuration_Time_FILE);
+
+        TimeOpen = false;
     }
     CheckTime(OpenTime);
-    
+
     if (packetSent)
     {
         packetSent = false;
