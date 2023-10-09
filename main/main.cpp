@@ -196,6 +196,7 @@ void sleep()
 bool Downlink = false;
 bool connect = false;
 bool Read = false;
+static bool ReadyToMove = false;
 void callback(uint8_t message)
 {
     bool lorawan_joined = false;
@@ -271,6 +272,7 @@ void callback(uint8_t message)
 
         writeFile(LittleFS, Configuration_Time_FILE, buffer);
         TimeOpen = true;
+        ReadyToMove = true;
     }
 }
 
@@ -434,7 +436,7 @@ void setup()
     // Init GPS
     gps_setup();
     Buttonsetup();
-    Motor_Setup() ; 
+    Motor_Setup();
 
 // Show logo on first boot after removing battery
 #ifndef ALWAYS_SHOW_LOGO
@@ -481,8 +483,13 @@ void loop()
 
         TimeOpen = false;
     }
-    CheckTime(OpenTime);
-
+    if (ReadyToMove)
+    {
+        ReadyToMove = CheckTime(OpenTime);
+        
+    }
+    button1check();
+    button2check();
     if (packetSent)
     {
         packetSent = false;

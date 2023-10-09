@@ -32,14 +32,13 @@ void lorawan_register(void (*callback)(uint8_t message));
 // Version
 // -----------------------------------------------------------------------------
 
-#define APP_NAME                "VELA GANADERA"
+#define APP_NAME                "ROQUET"
 
 
 // -----------------------------------------------------------------------------
 // Configuration
 // -----------------------------------------------------------------------------
 #define Configuration_Time_FILE "/TimeFile.txt"
-#define Button_Data "/ButtonData.txt"
 
 
 
@@ -68,7 +67,7 @@ void lorawan_register(void (*callback)(uint8_t message));
 #define DEBUG_PORT              Serial          // Serial debug port
 #define SERIAL_BAUD             115200          // Serial debug baud rate
 #define SLEEP_BETWEEN_MESSAGES  false           // Do sleep between messages
-#define SEND_INTERVAL           (60 * 1000)   // Sleep for these many millis
+#define SEND_INTERVAL           (120 * 1000)   // Sleep for these many millis
 #define MESSAGE_TO_SLEEP_DELAY  5000            // Time after message before going to sleep
 #define LOGO_DELAY              5000            // Time to show logo on first boot
 #define LORAWAN_PORT            10              // Port the messages will be sent to
@@ -105,8 +104,10 @@ void lorawan_register(void (*callback)(uint8_t message));
 
 #define I2C_SDA         21
 #define I2C_SCL         22
-#define BUTTON_1_PIN    13
-#define BUTTON_2_PIN    2
+#define BUTTON_1_PIN    32
+#define BUTTON_2_PIN    0
+#define BUTTON_1_R      13
+#define BUTTON_2_R      4
 #if defined(T_BEAM_V07)
 #define LED_PIN         14
 #define BUTTON_PIN      39

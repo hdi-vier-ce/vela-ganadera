@@ -69,10 +69,11 @@ uint8_t BatPercent = axp2.getBattPercentage();
 bool Remove = axp2.isVbusRemoveIRQ();
 uint8_t Status;
 
-const unsigned int IN1 = 14;
-const unsigned int IN2 = 15;
+const unsigned int IN4 = 25;
+const unsigned int IN3 = 15;
 const unsigned int EN = 2;
-L298N motor(EN, IN1, IN2);
+
+L298N motor(EN, IN3, IN4);
 
 void gps_time(char *buffer, uint8_t size)
 {
@@ -116,6 +117,14 @@ void gps_loop()
         _gps.encode(_serial_gps.read());
     }
 }
+void Buttonsetup()
+{
+    pinMode(BUTTON_1_PIN, INPUT_PULLDOWN);
+    pinMode(BUTTON_2_PIN, INPUT_PULLDOWN);
+    pinMode(BUTTON_1_R, OUTPUT);
+    pinMode(BUTTON_2_R, OUTPUT);
+}
+
 void Motor_Setup()
 {
     motor.setSpeed(70);
@@ -123,19 +132,47 @@ void Motor_Setup()
 
 void Turn_Motor()
 {
+    digitalWrite(BUTTON_2_R, HIGH);
+
     motor.setSpeed(255);
+    screen_print("Activaiting Motor");
 
     motor.forward();
-    // motor.run(L298N::FORWARD);
 
-    delay(3000);
+    delay(11500);
     motor.stop();
+    digitalWrite(BUTTON_1_R, HIGH);
+    delay(2000);
+    digitalWrite(BUTTON_1_R, LOW);
+    delay(1000);
+    digitalWrite(BUTTON_1_R, HIGH);
+    delay(2000);
+    digitalWrite(BUTTON_1_R, LOW);
+    delay(1000);
+    digitalWrite(BUTTON_1_R, HIGH);
+    delay(2000);
+    digitalWrite(BUTTON_1_R, LOW);
+}
+void Turn_ON_Motor()
+{
+    motor.setSpeed(255);
+    motor.forward();
+    screen_print(" Motor Forward");
+    screen_print("\n");
 }
 
-void CheckTime(String OpenTime)
+void Turn_Back_Motor()
+{
+    motor.setSpeed(255);
+    motor.backward();
+    screen_print(" Motor Backward ");
+    screen_print("\n");
+}
+
+bool CheckTime(String OpenTime)
 
 {
-    if (!OpenTime.isEmpty())
+    if (!OpenTime.isEmpty() && OpenTime != "000000")
     {
 
         const char *Open = OpenTime.c_str();
@@ -143,32 +180,73 @@ void CheckTime(String OpenTime)
         std::string timeStr(Open);
         int HH = std::stoi(timeStr.substr(0, 2));
         int MM = std::stoi(timeStr.substr(2, 2));
-        int SS = std::stoi(timeStr.substr(4, 2));
+        int SE = std::stoi(timeStr.substr(4, 2));
 
-        if (HH == _gps.time.hour() && MM == _gps.time.minute() && SS == _gps.time.second())
+        if (HH == _gps.time.hour() && MM == _gps.time.minute() && SE == _gps.time.second())
         {
             Turn_Motor();
-            // sleep(1);
-            // screen_print("Turnning now");
-        }
+            return false  ; 
+        } else return true ; 
     }
 }
 
-void Buttonsetup()
+void button1check()
 {
-    pinMode(BUTTON_1_PIN, INPUT_PULLDOWN); // Set the button pin as input with internal pull-up resistor
-    attachInterrupt(digitalPinToInterrupt(BUTTON_1_PIN), button1Interrupt, CHANGE);
-}
 
-void button1Interrupt()
-{
-    // Interrupt service routine
-    // Perform actions when the button state changes
     int buttonState1 = digitalRead(BUTTON_1_PIN);
-    // Read the button state
-    if (buttonState1 == HIGH)
+
+    static bool Moving = false;
+
+    if (buttonState1 == HIGH && Moving == false)
     {
-        Serial.println("up");
+        delay(200);
+        buttonState1 = digitalRead(BUTTON_1_PIN);
+        if (buttonState1 == HIGH)
+        {
+            digitalWrite(BUTTON_2_R, HIGH);
+            Turn_ON_Motor();
+            Moving = true;
+        }
+    }
+    if (buttonState1 == LOW && Moving == true)
+    {
+        delay(200);
+        buttonState1 = digitalRead(BUTTON_1_PIN);
+        if (buttonState1 == LOW)
+        {
+            motor.stop();
+            digitalWrite(BUTTON_2_R, LOW);
+            Moving = false;
+        }
+    }
+}
+void button2check()
+{
+    int buttonState2 = digitalRead(BUTTON_2_PIN);
+
+    static bool Move = false;
+
+    if (buttonState2 == HIGH && Move == false)
+    {
+        delay(200);
+        buttonState2 = digitalRead(BUTTON_2_PIN);
+        if (buttonState2 == HIGH)
+        {
+            digitalWrite(BUTTON_2_R, HIGH);
+            Turn_Back_Motor();
+            Move = true;
+        }
+    }
+    if (buttonState2 == LOW && Move == true)
+    {
+        delay(200);
+        buttonState2 = digitalRead(BUTTON_2_PIN);
+        if (buttonState2 == LOW)
+        {
+            motor.stop();
+            digitalWrite(BUTTON_2_R, LOW);
+            Move = false;
+        }
     }
 }
 
