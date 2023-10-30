@@ -70,7 +70,7 @@ bool Remove = axp2.isVbusRemoveIRQ();
 uint8_t Status;
 
 const unsigned int IN4 = 25;
-const unsigned int IN3 = 15;
+const unsigned int IN3 = 35;
 const unsigned int EN = 2;
 
 L298N motor(EN, IN3, IN4);

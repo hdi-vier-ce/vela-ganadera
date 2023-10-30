@@ -105,7 +105,7 @@ void lorawan_register(void (*callback)(uint8_t message));
 #define I2C_SDA         21
 #define I2C_SCL         22
 #define BUTTON_1_PIN    32
-#define BUTTON_2_PIN    0
+#define BUTTON_2_PIN    33
 #define BUTTON_1_R      13
 #define BUTTON_2_R      4
 #if defined(T_BEAM_V07)
