@@ -14,6 +14,6 @@ void button2check();
 void  Buttonsetup() ;
 bool CheckTime(String OpenTime) ; 
 void Motor_Setup() ; 
-void Turn_Motor() ; 
+void Turn_Motor(int Di) ; 
 void Turn_Back_Motor() ; 
 void Turn_ON_Motor();

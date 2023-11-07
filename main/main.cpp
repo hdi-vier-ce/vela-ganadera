@@ -102,7 +102,6 @@ bool trySend()
 {
     packetSent = false;
     // We also wait for altitude being not exactly zero, because the GPS chip generates a bogus 0 alt report when first powered on
-    // if ((0< gps_hdop())&& (gps_hdop()< 50) && (gps_latitude() != 0 )&& (gps_longitude() != 0) && (gps_altitude() != 0)) {
     char buffer[40];
     snprintf(buffer, sizeof(buffer), "Latitude: %10.6f\n", gps_latitude());
     screen_print(buffer);
@@ -112,6 +111,18 @@ bool trySend()
     screen_print(buffer);
     snprintf(buffer, sizeof(buffer), "Battery Status %s\n", getBaChStatus());
     screen_print(buffer);
+    String OpeningTime = read(LittleFS, Configuration_Time_FILE);
+    if (OpeningTime != "999999")
+    {
+       int hh, mm, ss;
+    sscanf(OpeningTime.c_str(), "%2d%2d%2d", &hh, &mm, &ss);
+
+    snprintf(buffer, sizeof(buffer), " Next Open at %02d:%02d:%02d\n", hh, mm, ss);
+    screen_print(buffer);
+
+    }
+    
+    
 
     buildPacket(txBuffer);
 
@@ -259,10 +270,13 @@ void callback(uint8_t message)
         for (uint8_t i = 1; i < len; i++)
         {
             char temp[4];
-            snprintf(temp, sizeof(temp), "%2X", data[i]);
-            Serial.println(temp);
-            screen_print(temp);
-            screen_print(":");
+            snprintf(temp, sizeof(temp), "%02X", data[i]);
+            if (i < len - 1)
+            {
+                Serial.println(temp);
+                screen_print(temp);
+                screen_print(":");
+            }
 
             strncat(buffer, temp, sizeof(buffer) - strlen(buffer) - 1);
         }
@@ -436,7 +450,7 @@ void setup()
     // Init GPS
     gps_setup();
     Buttonsetup();
-    Motor_Setup();
+    // Motor_Setup();
 
 // Show logo on first boot after removing battery
 #ifndef ALWAYS_SHOW_LOGO
@@ -486,7 +500,6 @@ void loop()
     if (ReadyToMove)
     {
         ReadyToMove = CheckTime(OpenTime);
-        
     }
     button1check();
     button2check();

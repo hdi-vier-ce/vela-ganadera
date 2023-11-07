@@ -69,11 +69,11 @@ uint8_t BatPercent = axp2.getBattPercentage();
 bool Remove = axp2.isVbusRemoveIRQ();
 uint8_t Status;
 
-const unsigned int IN4 = 25;
-const unsigned int IN3 = 35;
-const unsigned int EN = 2;
+/*const unsigned int IN4 = 25;
+const unsigned int IN3 = 2;
+const unsigned int EN = 0;
 
-L298N motor(EN, IN3, IN4);
+L298N motor(EN, IN3, IN4);*/
 
 void gps_time(char *buffer, uint8_t size)
 {
@@ -123,24 +123,28 @@ void Buttonsetup()
     pinMode(BUTTON_2_PIN, INPUT_PULLDOWN);
     pinMode(BUTTON_1_R, OUTPUT);
     pinMode(BUTTON_2_R, OUTPUT);
+    pinMode(IN3, OUTPUT);
+    pinMode(IN4, OUTPUT);
+    pinMode(EN, OUTPUT);
 }
 
-void Motor_Setup()
+/*void Motor_Setup()
 {
     motor.setSpeed(70);
-}
+}*/
 
-void Turn_Motor()
+void Turn_Motor(int Di)
 {
     digitalWrite(BUTTON_2_R, HIGH);
 
-    motor.setSpeed(255);
+    digitalWrite(IN3, HIGH);
+    digitalWrite(IN4, LOW);
+
     screen_print("Activaiting Motor");
-
-    motor.forward();
-
-    delay(11500);
-    motor.stop();
+    screen_print("\n");
+    delay(Di * 1150);
+    digitalWrite(IN3, LOW);
+    digitalWrite(IN4, LOW);
     digitalWrite(BUTTON_1_R, HIGH);
     delay(2000);
     digitalWrite(BUTTON_1_R, LOW);
@@ -152,19 +156,26 @@ void Turn_Motor()
     digitalWrite(BUTTON_1_R, HIGH);
     delay(2000);
     digitalWrite(BUTTON_1_R, LOW);
+    digitalWrite(BUTTON_2_R, LOW);
 }
 void Turn_ON_Motor()
 {
-    motor.setSpeed(255);
-    motor.forward();
+    digitalWrite(IN3, HIGH);
+    digitalWrite(IN4, LOW);
+
+    digitalWrite(EN, HIGH);
+
     screen_print(" Motor Forward");
     screen_print("\n");
 }
 
 void Turn_Back_Motor()
 {
-    motor.setSpeed(255);
-    motor.backward();
+    digitalWrite(EN, HIGH);
+
+    digitalWrite(IN4, HIGH);
+    digitalWrite(IN3, LOW);
+
     screen_print(" Motor Backward ");
     screen_print("\n");
 }
@@ -181,12 +192,16 @@ bool CheckTime(String OpenTime)
         int HH = std::stoi(timeStr.substr(0, 2));
         int MM = std::stoi(timeStr.substr(2, 2));
         int SE = std::stoi(timeStr.substr(4, 2));
+        int Distance = std::stoi(timeStr.substr(6, 2));
 
         if (HH == _gps.time.hour() && MM == _gps.time.minute() && SE == _gps.time.second())
         {
-            Turn_Motor();
-            return false  ; 
-        } else return true ; 
+            Turn_Motor(Distance);
+            writeFile(LittleFS, Configuration_Time_FILE, "999999");
+            return false;
+        }
+        else
+            return true;
     }
 }
 
@@ -214,8 +229,11 @@ void button1check()
         buttonState1 = digitalRead(BUTTON_1_PIN);
         if (buttonState1 == LOW)
         {
-            motor.stop();
             digitalWrite(BUTTON_2_R, LOW);
+            digitalWrite(IN3, LOW);
+            digitalWrite(IN4, LOW);
+            digitalWrite(EN, LOW);
+
             Moving = false;
         }
     }
@@ -243,7 +261,9 @@ void button2check()
         buttonState2 = digitalRead(BUTTON_2_PIN);
         if (buttonState2 == LOW)
         {
-            motor.stop();
+            digitalWrite(IN3, LOW);
+            digitalWrite(IN4, LOW);
+            digitalWrite(EN, LOW);
             digitalWrite(BUTTON_2_R, LOW);
             Move = false;
         }
