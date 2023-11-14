@@ -142,7 +142,7 @@ void Turn_Motor(int Di)
 
     screen_print("Activaiting Motor");
     screen_print("\n");
-    delay(Di * 1150);
+    delay(Di * 830);
     digitalWrite(IN3, LOW);
     digitalWrite(IN4, LOW);
     digitalWrite(BUTTON_1_R, HIGH);

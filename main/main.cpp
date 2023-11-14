@@ -44,7 +44,8 @@ bool pmu_irq = false;
 bool Reset = true;
 
 bool packetSent, packetQueued;
-float BatteryPercentage = axp.getBattPercentage();
+uint8_t BatteryPercentage = axp.getBattPercentage();
+int Battery = std::floor((BatteryPercentage / 255.0) * 100);
 bool TimeOpen = true;
 
 String getBaChStatus()
@@ -107,23 +108,19 @@ bool trySend()
     screen_print(buffer);
     snprintf(buffer, sizeof(buffer), "Longitude: %10.6f\n", gps_longitude());
     screen_print(buffer);
-    snprintf(buffer, sizeof(buffer), "Percentage: %1.0f %\n", axp.getBattPercentage());
+    snprintf(buffer, sizeof(buffer), "Percentage: %d%\n", Battery);
     screen_print(buffer);
     snprintf(buffer, sizeof(buffer), "Battery Status %s\n", getBaChStatus());
     screen_print(buffer);
     String OpeningTime = read(LittleFS, Configuration_Time_FILE);
     if (OpeningTime != "999999")
     {
-       int hh, mm, ss;
-    sscanf(OpeningTime.c_str(), "%2d%2d%2d", &hh, &mm, &ss);
+        int hh, mm, ss;
+        sscanf(OpeningTime.c_str(), "%2d%2d%2d", &hh, &mm, &ss);
 
-    snprintf(buffer, sizeof(buffer), " Next Open at %02d:%02d:%02d\n", hh, mm, ss);
-    screen_print(buffer);
-
+        snprintf(buffer, sizeof(buffer), " Next Open at %02d:%02d:%02d\n", hh, mm, ss);
+        screen_print(buffer);
     }
-    
-    
-
     buildPacket(txBuffer);
 
 #if LORAWAN_CONFIRMED_EVERY > 0
