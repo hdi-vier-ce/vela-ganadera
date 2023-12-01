@@ -119,8 +119,8 @@ void gps_loop()
 }
 void Buttonsetup()
 {
-    pinMode(BUTTON_1_PIN, INPUT_PULLDOWN);
-    pinMode(BUTTON_2_PIN, INPUT_PULLDOWN);
+    //pinMode(BUTTON_1_PIN, INPUT_PULLDOWN);
+    //pinMode(BUTTON_2_PIN, INPUT_PULLDOWN);
     pinMode(BUTTON_1_R, OUTPUT);
     pinMode(BUTTON_2_R, OUTPUT);
     pinMode(IN3, OUTPUT);
@@ -140,7 +140,7 @@ void Turn_Motor(int Di)
     digitalWrite(IN3, HIGH);
     digitalWrite(IN4, LOW);
 
-    screen_print("Activaiting Motor");
+    screen_print("Motor is activated");
     screen_print("\n");
     delay(Di * 830);
     digitalWrite(IN3, LOW);
@@ -181,7 +181,6 @@ void Turn_Back_Motor()
 }
 
 bool CheckTime(String OpenTime)
-
 {
     if (!OpenTime.isEmpty() && OpenTime != "000000")
     {
@@ -214,7 +213,7 @@ void button1check()
 
     if (buttonState1 == HIGH && Moving == false)
     {
-        delay(200);
+        delay(500);
         buttonState1 = digitalRead(BUTTON_1_PIN);
         if (buttonState1 == HIGH)
         {
@@ -225,14 +224,15 @@ void button1check()
     }
     if (buttonState1 == LOW && Moving == true)
     {
-        delay(200);
+        delay(500);
         buttonState1 = digitalRead(BUTTON_1_PIN);
         if (buttonState1 == LOW)
         {
-            digitalWrite(BUTTON_2_R, LOW);
             digitalWrite(IN3, LOW);
             digitalWrite(IN4, LOW);
             digitalWrite(EN, LOW);
+            digitalWrite(BUTTON_2_R, LOW);
+
 
             Moving = false;
         }
@@ -246,7 +246,7 @@ void button2check()
 
     if (buttonState2 == HIGH && Move == false)
     {
-        delay(200);
+        delay(500);
         buttonState2 = digitalRead(BUTTON_2_PIN);
         if (buttonState2 == HIGH)
         {
@@ -257,7 +257,7 @@ void button2check()
     }
     if (buttonState2 == LOW && Move == true)
     {
-        delay(200);
+        delay(500);
         buttonState2 = digitalRead(BUTTON_2_PIN);
         if (buttonState2 == LOW)
         {
