@@ -112,7 +112,7 @@ bool trySend()
     screen_print(buffer);
     snprintf(buffer, sizeof(buffer), "Battery Status %s\n", getBaChStatus());
     screen_print(buffer);
-    String OpeningTime = read(LittleFS, Configuration_Time_FILE);
+   String OpeningTime = read(LittleFS, Configuration_Time_FILE);
     if (OpeningTime != "999999")
     {
         int hh, mm, ss;
@@ -303,6 +303,11 @@ void scanI2Cdevice(void)
             Serial.print(addr, HEX);
             Serial.println(" !");
             nDevices++;
+            if (addr == ARDUINO_ADDRESS)
+            {
+                ssd1306_found = true;
+                Serial.println("Arduino found");
+            }
 
             if (addr == SSD1306_ADDRESS)
             {
@@ -446,8 +451,6 @@ void setup()
 
     // Init GPS
     gps_setup();
-    Buttonsetup();
-    // Motor_Setup();
 
 // Show logo on first boot after removing battery
 #ifndef ALWAYS_SHOW_LOGO
@@ -498,8 +501,7 @@ void loop()
     {
         ReadyToMove = CheckTime(OpenTime);
     }
-    button1check();
-    button2check();
+   
     if (packetSent)
     {
         packetSent = false;

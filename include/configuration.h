@@ -104,13 +104,7 @@ void lorawan_register(void (*callback)(uint8_t message));
 
 #define I2C_SDA         21
 #define I2C_SCL         22
-#define BUTTON_1_PIN    32
-#define BUTTON_2_PIN    33
-#define BUTTON_1_R      4
-#define BUTTON_2_R      13
-#define  IN4            25
-#define  IN3            2
-#define  EN             13
+
 #if defined(T_BEAM_V07)
 #define LED_PIN         14
 #define BUTTON_PIN      39
@@ -123,6 +117,8 @@ void lorawan_register(void (*callback)(uint8_t message));
 // -----------------------------------------------------------------------------
 
 #define SSD1306_ADDRESS 0x3C
+
+#define ARDUINO_ADDRESS 0x08
 
 // -----------------------------------------------------------------------------
 // GPS

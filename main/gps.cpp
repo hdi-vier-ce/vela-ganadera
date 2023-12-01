@@ -32,7 +32,6 @@
 #include <iostream>
 #include <sstream>
 #include <iterator>
-#include <L298N.h>
 
 uint32_t LatitudeBinary;
 uint32_t LongitudeBinary;
@@ -69,11 +68,6 @@ uint8_t BatPercent = axp2.getBattPercentage();
 bool Remove = axp2.isVbusRemoveIRQ();
 uint8_t Status;
 
-/*const unsigned int IN4 = 25;
-const unsigned int IN3 = 2;
-const unsigned int EN = 0;
-
-L298N motor(EN, IN3, IN4);*/
 
 void gps_time(char *buffer, uint8_t size)
 {
@@ -117,69 +111,14 @@ void gps_loop()
         _gps.encode(_serial_gps.read());
     }
 }
-void Buttonsetup()
-{
-    //pinMode(BUTTON_1_PIN, INPUT_PULLDOWN);
-    //pinMode(BUTTON_2_PIN, INPUT_PULLDOWN);
-    pinMode(BUTTON_1_R, OUTPUT);
-    pinMode(BUTTON_2_R, OUTPUT);
-    pinMode(IN3, OUTPUT);
-    pinMode(IN4, OUTPUT);
-    pinMode(EN, OUTPUT);
-}
-
-/*void Motor_Setup()
-{
-    motor.setSpeed(70);
-}*/
 
 void Turn_Motor(int Di)
 {
-    digitalWrite(BUTTON_2_R, HIGH);
-
-    digitalWrite(IN3, HIGH);
-    digitalWrite(IN4, LOW);
-
-    screen_print("Motor is activated");
-    screen_print("\n");
-    delay(Di * 830);
-    digitalWrite(IN3, LOW);
-    digitalWrite(IN4, LOW);
-    digitalWrite(BUTTON_1_R, HIGH);
-    delay(2000);
-    digitalWrite(BUTTON_1_R, LOW);
-    delay(1000);
-    digitalWrite(BUTTON_1_R, HIGH);
-    delay(2000);
-    digitalWrite(BUTTON_1_R, LOW);
-    delay(1000);
-    digitalWrite(BUTTON_1_R, HIGH);
-    delay(2000);
-    digitalWrite(BUTTON_1_R, LOW);
-    digitalWrite(BUTTON_2_R, LOW);
+     Wire.beginTransmission(ARDUINO_ADDRESS); 
+     Wire.write(Di);
+     
+     Wire.endTransmission();
 }
-void Turn_ON_Motor()
-{
-    digitalWrite(IN3, HIGH);
-    digitalWrite(IN4, LOW);
-
-    digitalWrite(EN, HIGH);
-
-    screen_print(" Motor Forward");
-    screen_print("\n");
-}
-
-void Turn_Back_Motor()
-{
-    digitalWrite(EN, HIGH);
-
-    digitalWrite(IN4, HIGH);
-    digitalWrite(IN3, LOW);
-
-    screen_print(" Motor Backward ");
-    screen_print("\n");
-}
-
 bool CheckTime(String OpenTime)
 {
     if (!OpenTime.isEmpty() && OpenTime != "000000")
@@ -201,72 +140,6 @@ bool CheckTime(String OpenTime)
         }
         else
             return true;
-    }
-}
-
-void button1check()
-{
-
-    int buttonState1 = digitalRead(BUTTON_1_PIN);
-
-    static bool Moving = false;
-
-    if (buttonState1 == HIGH && Moving == false)
-    {
-        delay(500);
-        buttonState1 = digitalRead(BUTTON_1_PIN);
-        if (buttonState1 == HIGH)
-        {
-            digitalWrite(BUTTON_2_R, HIGH);
-            Turn_ON_Motor();
-            Moving = true;
-        }
-    }
-    if (buttonState1 == LOW && Moving == true)
-    {
-        delay(500);
-        buttonState1 = digitalRead(BUTTON_1_PIN);
-        if (buttonState1 == LOW)
-        {
-            digitalWrite(IN3, LOW);
-            digitalWrite(IN4, LOW);
-            digitalWrite(EN, LOW);
-            digitalWrite(BUTTON_2_R, LOW);
-
-
-            Moving = false;
-        }
-    }
-}
-void button2check()
-{
-    int buttonState2 = digitalRead(BUTTON_2_PIN);
-
-    static bool Move = false;
-
-    if (buttonState2 == HIGH && Move == false)
-    {
-        delay(500);
-        buttonState2 = digitalRead(BUTTON_2_PIN);
-        if (buttonState2 == HIGH)
-        {
-            digitalWrite(BUTTON_2_R, HIGH);
-            Turn_Back_Motor();
-            Move = true;
-        }
-    }
-    if (buttonState2 == LOW && Move == true)
-    {
-        delay(500);
-        buttonState2 = digitalRead(BUTTON_2_PIN);
-        if (buttonState2 == LOW)
-        {
-            digitalWrite(IN3, LOW);
-            digitalWrite(IN4, LOW);
-            digitalWrite(EN, LOW);
-            digitalWrite(BUTTON_2_R, LOW);
-            Move = false;
-        }
     }
 }
 
