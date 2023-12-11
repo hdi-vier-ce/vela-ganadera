@@ -112,7 +112,7 @@ bool trySend()
     screen_print(buffer);
     snprintf(buffer, sizeof(buffer), "Battery Status %s\n", getBaChStatus());
     screen_print(buffer);
-   String OpeningTime = read(LittleFS, Configuration_Time_FILE);
+    String OpeningTime = read(LittleFS, Configuration_Time_FILE);
     if (OpeningTime != "999999")
     {
         int hh, mm, ss;
@@ -491,6 +491,7 @@ void loop()
     gps_loop();
     lorawan_loop();
     screen_loop();
+    LittleFS.begin(true); 
     if (TimeOpen)
     {
         OpenTime = read(LittleFS, Configuration_Time_FILE);
@@ -501,7 +502,7 @@ void loop()
     {
         ReadyToMove = CheckTime(OpenTime);
     }
-   
+
     if (packetSent)
     {
         packetSent = false;

@@ -131,7 +131,6 @@ bool CheckTime(String OpenTime)
         int MM = std::stoi(timeStr.substr(2, 2));
         int SE = std::stoi(timeStr.substr(4, 2));
         int Distance = std::stoi(timeStr.substr(6, 2));
-
         if (HH == _gps.time.hour() && MM == _gps.time.minute() && SE == _gps.time.second())
         {
             Turn_Motor(Distance);
