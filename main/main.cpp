@@ -44,8 +44,7 @@ bool pmu_irq = false;
 bool Reset = true;
 
 bool packetSent, packetQueued;
-uint8_t BatteryPercentage = axp.getBattPercentage();
-int Battery = std::floor((BatteryPercentage / 255.0) * 100);
+
 bool TimeOpen = true;
 
 String getBaChStatus()
@@ -77,6 +76,22 @@ void setPmu_irq(bool value)
     pmu_irq = value;
 }
 
+int voltageToPercentage()
+{ 
+    float Bvoltage = axp.getBattVoltage(); 
+    if (Bvoltage >= 4.2)
+        return 100;
+    if (Bvoltage <= 3.0)
+        return 0;
+    // Approximate percentage based on voltage
+    if (Bvoltage > 4.0)
+        return 80 + (Bvoltage - 4.0) * 100 / 0.2; // Linear interpolation between 80% and 100%
+    if (Bvoltage > 3.7)
+        return 50 + (Bvoltage - 3.7) * 30 / 0.3; // Linear interpolation between 50% and 80%
+    if (Bvoltage > 3.0)
+        return (Bvoltage - 3.0) * 50 / 0.7; // Linear interpolation between 0% and 50%
+}
+
 #if defined(PAYLOAD_USE_FULL)
 // includes number of satellites and accuracy
 static uint8_t txBuffer[13];
@@ -99,8 +114,11 @@ int counter = 0;
  * If we have a valid position send it to the server.
  * @return true if we decided to send.
  */
+// uint8_t BatteryPercentage = axp.getBattPercentage();
+// int Battery = std::floor((BatteryPercentage / 255.0) * 100);
 bool trySend()
 {
+    int Battery = voltageToPercentage();
     packetSent = false;
     // We also wait for altitude being not exactly zero, because the GPS chip generates a bogus 0 alt report when first powered on
     char buffer[40];
@@ -108,7 +126,7 @@ bool trySend()
     screen_print(buffer);
     snprintf(buffer, sizeof(buffer), "Longitude: %10.6f\n", gps_longitude());
     screen_print(buffer);
-    snprintf(buffer, sizeof(buffer), "Percentage: %d%\n", Battery);
+    snprintf(buffer, sizeof(buffer), "Percentage:  %d %\n", Battery);
     screen_print(buffer);
     snprintf(buffer, sizeof(buffer), "Battery Status %s\n", getBaChStatus());
     screen_print(buffer);
@@ -491,7 +509,7 @@ void loop()
     gps_loop();
     lorawan_loop();
     screen_loop();
-    LittleFS.begin(true); 
+    LittleFS.begin(true);
     if (TimeOpen)
     {
         OpenTime = read(LittleFS, Configuration_Time_FILE);

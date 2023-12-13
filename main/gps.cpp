@@ -64,10 +64,12 @@ char t[32]; // used to sprintf for Serial output
 
 TinyGPSPlus _gps;
 HardwareSerial _serial_gps(GPS_SERIAL_NUM);
-uint8_t BatPercent = axp2.getBattPercentage();
 bool Remove = axp2.isVbusRemoveIRQ();
 uint8_t Status;
-
+AXP20X_Class getAxp2()
+{
+    return axp2;
+}
 
 void gps_time(char *buffer, uint8_t size)
 {
@@ -146,6 +148,20 @@ uint8_t Positons(uint8_t RelativePosition, uint8_t ButtonOrder)
 {
     return (14 + RelativePosition + (ButtonOrder * 10));
 }
+int voltToPercentage(float Bvoltage)
+{
+    if (Bvoltage >= 4.2)
+        return 100;
+    if (Bvoltage <= 3.0)
+        return 0;
+    // Approximate percentage based on voltage
+    if (Bvoltage > 4.0)
+        return 80 + (Bvoltage - 4.0) * 100 / 0.2; // Linear interpolation between 80% and 100%
+    if (Bvoltage > 3.7)
+        return 50 + (Bvoltage - 3.7) * 30 / 0.3; // Linear interpolation between 50% and 80%
+    if (Bvoltage > 3.0)
+        return (Bvoltage - 3.0) * 50 / 0.7; // Linear interpolation between 0% and 50%
+}
 
 uint8_t size;
 String data1;
@@ -159,6 +175,7 @@ void buildPacket(uint8_t txBuffer[13])
     LongitudeBinary = ((_gps.location.lng() + 180) / 360.0) * 16777215;
     hdopGps = _gps.hdop.value() / 10;
     sats = _gps.satellites.value();
+    int BatteryPercent = voltageToPercentage();
     // get time
     char Buffertime[9];
     gps_time(Buffertime, sizeof(Buffertime));
@@ -186,9 +203,7 @@ void buildPacket(uint8_t txBuffer[13])
     Serial.print("Binary: ");
     Serial.println(timebinary);
 
-    uint8_t BatPercentage = BatPercent;
-    Serial.print("Battery pourcentage1: ");
-    Serial.println(BatPercent);
+    uint8_t BatPercentage = static_cast<uint8_t>(BatteryPercent);
     Serial.print("Battery pourcentage: ");
     Serial.println(BatPercentage);
     Serial.print("statu: ");

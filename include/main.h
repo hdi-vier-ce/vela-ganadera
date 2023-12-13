@@ -8,3 +8,4 @@ bool getAxp192_found();
 AXP20X_Class getAxp();
 bool getPmu_irq();
 void setPmu_irq(bool value);
+int voltageToPercentage ();
